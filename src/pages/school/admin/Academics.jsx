@@ -198,12 +198,12 @@ export default function Academics() {
         <SummaryCard icon={Layers} tone="emerald" label="Total Sections" value={totalSections} helper={`Academic Year ${academicYear}`} />
       </div>
 
-      <section className="mt-5 overflow-hidden rounded-2xl border border-surface-200 bg-white dark:border-surface-800 dark:bg-surface-900">
-        <div className="flex flex-col gap-3 border-b border-surface-200 p-4 md:flex-row md:items-center md:justify-between dark:border-surface-800">
+      <section className="mt-5 overflow-hidden rounded-2xl border border-surface-300 bg-white dark:border-surface-800 dark:bg-surface-900">
+        <div className="flex flex-col gap-3 border-b border-surface-300 p-4 md:flex-row md:items-center md:justify-between dark:border-surface-800">
           {/* ── Mobile Filters ── */}
           <div className="flex flex-col md:hidden gap-3 w-full">
             <div className="flex items-center justify-between gap-2">
-              <div className="inline-flex items-center gap-1.5 rounded-full border border-surface-200 bg-surface-50 px-2.5 py-1 text-xs font-semibold text-surface-700">
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-surface-300 bg-surface-50 px-2.5 py-1 text-xs font-semibold text-surface-700">
                 <Layers className="size-3.5 text-blue-600" />
                 <span>Academics List</span>
               </div>
@@ -214,7 +214,7 @@ export default function Academics() {
                   "flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full border transition",
                   showMobileFilters
                     ? "bg-blue-600 border-blue-700 text-white"
-                    : "bg-white border-surface-200 text-surface-700"
+                    : "bg-white border-surface-300 text-surface-700"
                 )}
               >
                 <Filter className="size-3.5" />
@@ -228,12 +228,12 @@ export default function Academics() {
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
                 placeholder="Search class or section..."
-                className="h-10 w-full rounded-xl border border-surface-200 bg-white pl-10 pr-4 text-sm font-medium outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 dark:border-surface-800 dark:bg-surface-955 dark:text-white"
+                className="h-10 w-full rounded-xl border border-surface-300 bg-white pl-10 pr-4 text-sm font-medium outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 dark:border-surface-800 dark:bg-surface-955 dark:text-white"
               />
             </div>
 
             {showMobileFilters && (
-              <div className="flex flex-col gap-2 pt-2 border-t border-surface-100 dark:border-surface-800">
+              <div className="flex flex-col gap-2 pt-2 border-t border-surface-200 dark:border-surface-800">
                 <CustomSelect
                   onChange={setStatusFilter}
                   value={statusFilter}
@@ -257,7 +257,7 @@ export default function Academics() {
                   value={searchTerm}
                   onChange={(event) => setSearchTerm(event.target.value)}
                   placeholder="Search class or section..."
-                  className="h-10 w-full rounded-xl border border-surface-200 bg-white pl-10 pr-4 text-sm font-medium outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 sm:w-72 dark:border-surface-800 dark:bg-surface-950 dark:text-white"
+                  className="h-10 w-full rounded-xl border border-surface-300 bg-white pl-10 pr-4 text-sm font-medium outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 sm:w-72 dark:border-surface-800 dark:bg-surface-950 dark:text-white"
                 />
               </div>
               <CustomSelect
@@ -277,7 +277,7 @@ export default function Academics() {
         {/* Desktop View */}
         <div className="hidden md:block overflow-x-auto">
           <Table className="w-full min-w-[900px] text-left">
-            <TableHeader className="border-b border-surface-200 bg-surface-50 text-[11px] font-bold uppercase tracking-wider text-surface-600 dark:border-surface-800 dark:bg-surface-955/50 dark:text-surface-300">
+            <TableHeader className="border-b border-surface-300 bg-surface-50 text-[11px] font-bold uppercase tracking-wider text-surface-600 dark:border-surface-800 dark:bg-surface-955/50 dark:text-surface-300">
               <TableRow className="hover:bg-transparent border-b-0">
                 <TableHead className="h-auto px-4 py-3 sticky left-0 z-20 bg-surface-50 dark:bg-slate-850 text-surface-600 dark:text-surface-300">Class</TableHead>
                 <TableHead className="h-auto px-4 py-3 text-center text-surface-600 dark:text-surface-300">Sections</TableHead>
@@ -286,7 +286,7 @@ export default function Academics() {
                 <TableHead className="h-auto px-4 py-3 text-center text-surface-600 dark:text-surface-300">Actions</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody className="divide-y divide-surface-200 text-sm dark:divide-surface-800 [&_tr]:border-b-0">
+            <TableBody className="divide-y divide-surface-300 text-sm dark:divide-surface-800 [&_tr]:border-b-0">
               {filteredClasses.length === 0 ? (
                 <TableRow className="hover:bg-transparent">
                   <TableCell colSpan={5} className="px-5 py-12 text-center">
@@ -318,7 +318,7 @@ export default function Academics() {
         </div>
 
         {/* Mobile View */}
-        <div className="block md:hidden divide-y divide-surface-200 dark:divide-surface-800 bg-white dark:bg-surface-900">
+        <div className="block md:hidden divide-y divide-surface-300 dark:divide-surface-800 bg-white dark:bg-surface-900">
           {filteredClasses.length === 0 ? (
             <div className="p-5 py-12 text-center text-sm">
               <p className="font-bold text-surface-900 dark:text-white">No matching classes found</p>
@@ -344,17 +344,17 @@ export default function Academics() {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-surface-100 dark:border-surface-800/40">
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-surface-200 dark:border-surface-800/40">
                     <button
                       onClick={() => openSectionsPage(cls.id)}
-                      className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-surface-200 bg-white px-3 text-surface-600 hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600 text-xs font-bold dark:bg-surface-900 dark:border-surface-800 dark:text-surface-300"
+                      className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-surface-300 bg-white px-3 text-surface-600 hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600 text-xs font-bold dark:bg-surface-900 dark:border-surface-800 dark:text-surface-300"
                     >
                       <Eye className="size-3.5" />
                       <span>Sections</span>
                     </button>
                     <button
                       onClick={() => handleEditClass(cls)}
-                      className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-surface-200 bg-white px-3 text-surface-600 hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600 text-xs font-bold dark:bg-surface-900 dark:border-surface-800 dark:text-surface-300"
+                      className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-surface-300 bg-white px-3 text-surface-600 hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600 text-xs font-bold dark:bg-surface-900 dark:border-surface-800 dark:text-surface-300"
                     >
                       <Edit2 className="size-3.5" />
                       <span>Edit</span>
@@ -373,7 +373,7 @@ export default function Academics() {
           )}
         </div>
 
-        <div className="flex flex-col gap-3 border-t border-surface-200 px-5 py-4 text-sm text-surface-600 sm:flex-row sm:items-center sm:justify-between dark:border-surface-800 dark:text-surface-300">
+        <div className="flex flex-col gap-3 border-t border-surface-300 px-5 py-4 text-sm text-surface-600 sm:flex-row sm:items-center sm:justify-between dark:border-surface-800 dark:text-surface-300">
           <span>Showing {filteredClasses.length === 0 ? 0 : 1} to {filteredClasses.length} of {filteredClasses.length} classes</span>
           <div className="flex items-center gap-2">
             <DisabledPageButton icon={ChevronsLeft} />
@@ -385,7 +385,7 @@ export default function Academics() {
               value="10"
               onChange={() => {}}
               options={[{ value: "10", label: "10" }]}
-              className="ml-2 h-9 rounded-lg border border-surface-200 bg-white px-3 text-sm font-semibold dark:border-surface-800 dark:bg-surface-950 dark:text-white"
+              className="ml-2 h-9 rounded-lg border border-surface-300 bg-white px-3 text-sm font-semibold dark:border-surface-800 dark:bg-surface-950 dark:text-white"
             />
           </div>
         </div>
@@ -411,9 +411,9 @@ export default function Academics() {
 
 function SummaryCard({ icon: Icon, tone, label, value, helper }) {
   const tones = {
-    blue: { card: 'border-blue-100 from-white to-blue-50/80', blob: 'bg-blue-100', tile: 'from-blue-500 to-sky-500 shadow-blue-500/30' },
-    emerald: { card: 'border-emerald-100 from-white to-emerald-50/80', blob: 'bg-emerald-100', tile: 'from-emerald-500 to-teal-500 shadow-emerald-500/30' },
-    indigo: { card: 'border-indigo-100 from-white to-indigo-50/80', blob: 'bg-indigo-100', tile: 'from-indigo-500 to-violet-500 shadow-indigo-500/30' },
+    blue: { card: 'border-blue-200 from-white to-blue-50/80', blob: 'bg-blue-100', tile: 'from-blue-500 to-sky-500 shadow-blue-500/30' },
+    emerald: { card: 'border-emerald-200 from-white to-emerald-50/80', blob: 'bg-emerald-100', tile: 'from-emerald-500 to-teal-500 shadow-emerald-500/30' },
+    indigo: { card: 'border-indigo-200 from-white to-indigo-50/80', blob: 'bg-indigo-100', tile: 'from-indigo-500 to-violet-500 shadow-indigo-500/30' },
   };
   const t = tones[tone] || tones.blue;
 
@@ -448,8 +448,8 @@ function StatusPill() {
 function IconButton({ icon: Icon, title, onClick, danger = false }) {
   const size = 'size-8';
   const colors = danger
-    ? 'border-red-100 text-red-500 hover:border-red-300 hover:bg-red-50 dark:border-red-900/60 dark:hover:bg-red-950/30'
-    : 'border-surface-200 text-surface-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600 dark:border-surface-800 dark:text-surface-300 dark:hover:bg-surface-800';
+    ? 'border-red-200 text-red-500 hover:border-red-300 hover:bg-red-50 dark:border-red-900/60 dark:hover:bg-red-950/30'
+    : 'border-surface-300 text-surface-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600 dark:border-surface-800 dark:text-surface-300 dark:hover:bg-surface-800';
 
   return (
     <button
@@ -464,7 +464,7 @@ function IconButton({ icon: Icon, title, onClick, danger = false }) {
 
 function DisabledPageButton({ icon: Icon }) {
   return (
-    <button className="grid size-9 place-items-center rounded-lg border border-surface-200 text-surface-400 dark:border-surface-800" disabled>
+    <button className="grid size-9 place-items-center rounded-lg border border-surface-300 text-surface-400 dark:border-surface-800" disabled>
       <Icon className="size-4" />
     </button>
   );

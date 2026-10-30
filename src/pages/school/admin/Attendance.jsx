@@ -75,7 +75,7 @@ function AttendanceRing({ value, periodLabel }) {
 }
 
 // Shared look for the filter dropdowns: same 40px height as the text inputs next to them.
-const FILTER_SELECT = 'flex h-10 w-full items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 outline-none transition hover:border-blue-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-50';
+const FILTER_SELECT = 'flex h-10 w-full items-center justify-between gap-2 rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-800 outline-none transition hover:border-blue-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-50';
 
 export default function Attendance() {
   const [attendance, setAttendance] = useState([]);
@@ -278,11 +278,11 @@ export default function Attendance() {
         </div>
       </div>
 
-      <div className="mb-6 rounded-2xl border border-slate-200 bg-gradient-to-br from-blue-50/60 via-white to-slate-50 p-4 shadow-none">
+      <div className="mb-6 rounded-2xl border border-slate-300 bg-gradient-to-br from-blue-50/60 via-white to-slate-50 p-4 shadow-none">
         {/* ── Mobile Layout Filters ── */}
         <div className="flex flex-col md:hidden gap-3">
           <div className="flex items-center justify-between gap-2">
-            <div className="inline-flex items-center gap-1.5 rounded-full border border-surface-200 bg-surface-50 px-2.5 py-1 text-xs font-semibold text-surface-700">
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-surface-300 bg-surface-50 px-2.5 py-1 text-xs font-semibold text-surface-700">
               <Users className="size-3.5 text-brand-600" />
               <span>Filters</span>
             </div>
@@ -293,7 +293,7 @@ export default function Attendance() {
                 "flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full border transition",
                 showMobileFilters
                   ? "bg-brand-600 border-brand-700 text-white"
-                  : "bg-white border-surface-200 text-surface-700"
+                  : "bg-white border-surface-300 text-surface-700"
               )}
             >
               <Filter className="size-3.5" />
@@ -308,12 +308,12 @@ export default function Attendance() {
               value={searchQuery}
               onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
               placeholder="Search user..."
-              className="h-10 w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm font-semibold text-slate-800 outline-none transition placeholder:font-medium placeholder:text-slate-400 hover:border-blue-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+              className="h-10 w-full rounded-xl border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm font-semibold text-slate-800 outline-none transition placeholder:font-medium placeholder:text-slate-400 hover:border-blue-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
             />
           </div>
 
           {showMobileFilters && (
-            <div className="flex flex-col gap-3 pt-3 border-t border-surface-100">
+            <div className="flex flex-col gap-3 pt-3 border-t border-surface-200">
               {/* Type filter */}
               <div className="w-full">
                 <label className="mb-1.5 block text-[11px] font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">Type</label>
@@ -334,7 +334,7 @@ export default function Attendance() {
                     type="month"
                     value={filterMonth}
                     onChange={(e) => setFilterMonth(e.target.value)}
-                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 outline-none transition placeholder:font-medium placeholder:text-slate-400 hover:border-blue-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                    className="h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-800 outline-none transition placeholder:font-medium placeholder:text-slate-400 hover:border-blue-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                   />
                 </div>
               ) : (
@@ -344,7 +344,7 @@ export default function Attendance() {
                     type="date"
                     value={filterDate}
                     onChange={(e) => setFilterDate(e.target.value)}
-                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 outline-none transition placeholder:font-medium placeholder:text-slate-400 hover:border-blue-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                    className="h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-800 outline-none transition placeholder:font-medium placeholder:text-slate-400 hover:border-blue-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                   />
                 </div>
               )}
@@ -406,7 +406,7 @@ export default function Attendance() {
                       value={rollNoQuery}
                       onChange={(e) => { setRollNoQuery(e.target.value); setPage(1); }}
                       placeholder="Search roll number..."
-                      className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 outline-none transition placeholder:font-medium placeholder:text-slate-400 hover:border-blue-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                      className="h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-800 outline-none transition placeholder:font-medium placeholder:text-slate-400 hover:border-blue-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                     />
                   </div>
                 </>
@@ -447,7 +447,7 @@ export default function Attendance() {
                 />
               </div>
 
-              <div className="flex justify-end mt-2 pt-2 border-t border-surface-100">
+              <div className="flex justify-end mt-2 pt-2 border-t border-surface-200">
                 <button
                   onClick={handleClearFilters}
                   className="rounded-lg px-3 py-1.5 text-xs font-bold text-rose-600 transition-colors hover:bg-rose-50"
@@ -481,7 +481,7 @@ export default function Attendance() {
                 type="month"
                 value={filterMonth}
                 onChange={(e) => setFilterMonth(e.target.value)}
-                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 outline-none transition placeholder:font-medium placeholder:text-slate-400 hover:border-blue-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                className="h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-800 outline-none transition placeholder:font-medium placeholder:text-slate-400 hover:border-blue-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
               />
             </div>
           ) : (
@@ -491,7 +491,7 @@ export default function Attendance() {
                 type="date"
                 value={filterDate}
                 onChange={(e) => setFilterDate(e.target.value)}
-                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 outline-none transition placeholder:font-medium placeholder:text-slate-400 hover:border-blue-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                className="h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-800 outline-none transition placeholder:font-medium placeholder:text-slate-400 hover:border-blue-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
               />
             </div>
           )}
@@ -506,7 +506,7 @@ export default function Attendance() {
                 value={searchQuery}
                 onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
                 placeholder="Search user..."
-                className="h-10 w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm font-semibold text-slate-800 outline-none transition placeholder:font-medium placeholder:text-slate-400 hover:border-blue-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                className="h-10 w-full rounded-xl border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm font-semibold text-slate-800 outline-none transition placeholder:font-medium placeholder:text-slate-400 hover:border-blue-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
               />
             </div>
           </div>
@@ -568,7 +568,7 @@ export default function Attendance() {
                   value={rollNoQuery}
                   onChange={(e) => { setRollNoQuery(e.target.value); setPage(1); }}
                   placeholder="Roll no..."
-                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 outline-none transition placeholder:font-medium placeholder:text-slate-400 hover:border-blue-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                  className="h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-800 outline-none transition placeholder:font-medium placeholder:text-slate-400 hover:border-blue-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                 />
               </div>
             </>
@@ -621,10 +621,10 @@ export default function Attendance() {
       </div>
 
       {/* Desktop View */}
-      <div className="hidden md:block overflow-hidden rounded-2xl border border-surface-200 bg-white">
+      <div className="hidden md:block overflow-hidden rounded-2xl border border-surface-300 bg-white">
         <div className="overflow-x-auto">
           <Table className="min-w-[800px] w-full text-left text-sm">
-            <TableHeader className="border-b border-surface-200 bg-surface-50 text-xs uppercase tracking-wide text-surface-500">
+            <TableHeader className="border-b border-surface-300 bg-surface-50 text-xs uppercase tracking-wide text-surface-500">
               <TableRow className="hover:bg-transparent border-b-0">
                 <TableHead className="h-auto px-4 py-3 font-bold sticky left-0 z-20 bg-surface-50 dark:bg-slate-850 text-surface-500">Name</TableHead>
                 <TableHead className="h-auto px-4 py-3 font-bold text-surface-500">{selectedRole === 'STUDENT' ? 'Roll No.' : 'Role'}</TableHead>
@@ -638,7 +638,7 @@ export default function Attendance() {
                 <TableHead className="h-auto px-4 py-3 font-bold text-surface-500">Actions</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody className="divide-y divide-surface-200 [&_tr]:border-b-0">
+            <TableBody className="divide-y divide-surface-300 [&_tr]:border-b-0">
               {attendance.length === 0 ? (
                 <TableRow className="hover:bg-transparent">
                   <TableCell colSpan={selectedRole === 'STUDENT' ? "7" : "6"} className="px-6 py-8 text-center text-surface-500">
@@ -694,7 +694,7 @@ export default function Attendance() {
                         {record.user?.id ? (
                           <Link
                             to={hasRole(record.user.role, 'STUDENT') ? `/school/admin/students/${record.user.id}` : `/school/admin/teachers/${record.user.id}`}
-                            className="group relative flex size-8 items-center justify-center rounded-lg border border-surface-200 bg-white text-surface-500 transition-all hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600"
+                            className="group relative flex size-8 items-center justify-center rounded-lg border border-surface-300 bg-white text-surface-500 transition-all hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600"
                           >
                             <Eye className="size-4" />
                             <span className="absolute -top-9 left-1/2 -translate-x-1/2 scale-0 rounded bg-surface-900 px-2 py-1 text-[10px] font-bold text-white transition-all group-hover:scale-100">View</span>
@@ -703,7 +703,7 @@ export default function Attendance() {
                           <button
                             type="button"
                             disabled
-                            className="flex size-8 items-center justify-center rounded-lg border border-surface-200 bg-surface-50 text-surface-300"
+                            className="flex size-8 items-center justify-center rounded-lg border border-surface-300 bg-surface-50 text-surface-300"
                             aria-label="No linked user"
                           >
                             <Eye className="size-4" />
@@ -722,12 +722,12 @@ export default function Attendance() {
       {/* Mobile View */}
       <div className="block md:hidden space-y-4">
         {attendance.length === 0 ? (
-          <div className="rounded-2xl border border-surface-200 bg-white p-8 text-center text-surface-500 text-sm">
+          <div className="rounded-2xl border border-surface-300 bg-white p-8 text-center text-surface-500 text-sm">
             No attendance records match the current filters
           </div>
         ) : (
           attendance.map(record => (
-            <div key={record.id} className="rounded-2xl border border-surface-200 bg-white p-4 space-y-3">
+            <div key={record.id} className="rounded-2xl border border-surface-300 bg-white p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="font-bold text-surface-950 text-sm">{record.user?.name || '-'}</span>
                 <Badge className={`rounded-full border-transparent text-[10px] font-bold ${statusColors[record.status?.toUpperCase()] || statusColors.PRESENT}`}>
@@ -778,11 +778,11 @@ export default function Attendance() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-end pt-2 border-t border-surface-100">
+              <div className="flex items-center justify-end pt-2 border-t border-surface-200">
                 {record.user?.id ? (
                   <Link
                     to={hasRole(record.user.role, 'STUDENT') ? `/school/admin/students/${record.user.id}` : `/school/admin/teachers/${record.user.id}`}
-                    className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-surface-200 bg-white px-3 text-surface-600 hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600 text-xs font-bold"
+                    className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-surface-300 bg-white px-3 text-surface-600 hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600 text-xs font-bold"
                   >
                     <Eye className="size-3.5" />
                     <span>View Profile</span>
@@ -795,7 +795,7 @@ export default function Attendance() {
           ))
         )}
       </div>
-      <div className="mt-4 overflow-hidden rounded-2xl border border-surface-200 bg-white">
+      <div className="mt-4 overflow-hidden rounded-2xl border border-surface-300 bg-white">
         <DataTablePagination
           page={page}
           limit={limit}

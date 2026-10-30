@@ -207,9 +207,9 @@ export default function Grievances() {
         </div>
         <div className="flex flex-wrap gap-2">
           {[
-            { icon: <AlertCircle className="text-rose-500 size-3.5" />, label: `${stats.open} Open`, tone: 'border-rose-100 bg-rose-50 text-rose-700' },
-            { icon: <Clock className="text-amber-500 size-3.5" />, label: `${stats.inProgress} In Progress`, tone: 'border-amber-100 bg-amber-50 text-amber-700' },
-            { icon: <CheckCircle className="text-emerald-500 size-3.5" />, label: `${stats.resolved} Resolved`, tone: 'border-emerald-100 bg-emerald-50 text-emerald-700' },
+            { icon: <AlertCircle className="text-rose-500 size-3.5" />, label: `${stats.open} Open`, tone: 'border-rose-200 bg-rose-50 text-rose-700' },
+            { icon: <Clock className="text-amber-500 size-3.5" />, label: `${stats.inProgress} In Progress`, tone: 'border-amber-200 bg-amber-50 text-amber-700' },
+            { icon: <CheckCircle className="text-emerald-500 size-3.5" />, label: `${stats.resolved} Resolved`, tone: 'border-emerald-200 bg-emerald-50 text-emerald-700' },
           ].map((pill) => (
             <Badge key={pill.label} variant="outline" className={cn('gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold', pill.tone)}>
               {pill.icon}{pill.label}
@@ -248,7 +248,7 @@ export default function Grievances() {
         </Select>
       </div>
 
-      <div className="hidden md:block overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-700">
+      <div className="hidden md:block overflow-x-auto rounded-2xl border border-slate-300 dark:border-slate-700">
         <DataTable columns={columns} data={list} onRowClick={openTicketMessages} />
       </div>
       <div className="md:hidden space-y-3">

@@ -448,7 +448,7 @@ export default function Complaints() {
               value={query}
               onChange={(e) => { setQuery(e.target.value); setPage(1); }}
               placeholder={activeTab === 'user-support' ? "Search parent & teacher tickets..." : "Search platform tickets..."}
-              className="w-full rounded-xl border border-surface-200 bg-white py-2 pl-10 pr-4 text-sm font-medium outline-none transition focus:border-brand-300 focus:ring-4 focus:ring-brand-100"
+              className="w-full rounded-xl border border-surface-300 bg-white py-2 pl-10 pr-4 text-sm font-medium outline-none transition focus:border-brand-300 focus:ring-4 focus:ring-brand-100"
             />
           </div>
         </div>
@@ -463,10 +463,10 @@ export default function Complaints() {
       {/* Dynamic Status Counter Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
         {[
-          ['Total', activeCounts.total, 'bg-brand-100 text-brand-700', 'border-blue-100 from-white to-blue-50/80', 'bg-blue-100'],
-          ['Open', activeCounts.OPEN, 'bg-red-100 text-red-600', 'border-red-100 from-white to-red-50/80', 'bg-red-100'],
-          ['In Progress', activeCounts.IN_PROGRESS, 'bg-amber-100 text-amber-700', 'border-amber-100 from-white to-amber-50/80', 'bg-amber-100'],
-          ['Resolved', (activeCounts.RESOLVED || 0) + (activeCounts.CLOSED || 0), 'bg-emerald-100 text-emerald-600', 'border-emerald-100 from-white to-emerald-50/80', 'bg-emerald-100'],
+          ['Total', activeCounts.total, 'bg-brand-100 text-brand-700', 'border-blue-200 from-white to-blue-50/80', 'bg-blue-100'],
+          ['Open', activeCounts.OPEN, 'bg-red-100 text-red-600', 'border-red-200 from-white to-red-50/80', 'bg-red-100'],
+          ['In Progress', activeCounts.IN_PROGRESS, 'bg-amber-100 text-amber-700', 'border-amber-200 from-white to-amber-50/80', 'bg-amber-100'],
+          ['Resolved', (activeCounts.RESOLVED || 0) + (activeCounts.CLOSED || 0), 'bg-emerald-100 text-emerald-600', 'border-emerald-200 from-white to-emerald-50/80', 'bg-emerald-100'],
         ].map(([label, value, tone, card, blob]) => (
           <div key={label} className={`relative overflow-hidden rounded-2xl border bg-gradient-to-br p-3 transition-colors hover:border-surface-300 sm:p-5 ${card}`}>
             <span className={`pointer-events-none absolute -right-6 -top-6 size-20 rounded-full opacity-60 ${blob}`} />
@@ -483,7 +483,7 @@ export default function Complaints() {
             onClick={() => setActiveTab('user-support')}
             className={`rounded-xl border px-4 py-2.5 text-sm font-bold transition-colors ${activeTab === 'user-support'
                 ? 'border-blue-700 bg-gradient-to-br from-blue-600 to-indigo-600 text-white ring-2 ring-blue-200'
-                : 'border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700'
+                : 'border-slate-300 bg-white text-slate-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700'
               }`}
           >
             User Support (Parents & Teachers)
@@ -492,7 +492,7 @@ export default function Complaints() {
             onClick={() => setActiveTab('platform-support')}
             className={`rounded-xl border px-4 py-2.5 text-sm font-bold transition-colors ${activeTab === 'platform-support'
                 ? 'border-blue-700 bg-gradient-to-br from-blue-600 to-indigo-600 text-white ring-2 ring-blue-200'
-                : 'border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700'
+                : 'border-slate-300 bg-white text-slate-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700'
               }`}
           >
             Platform Support (To Super Admin)
@@ -502,21 +502,21 @@ export default function Complaints() {
 
       {/* PLATFORM SUPPORT CREATE TICKET FORM */}
       {isInstituteAdmin && activeTab === 'platform-support' && (
-        <form onSubmit={createTicket} className="glass-panel rounded-2xl border border-surface-200 p-5 shadow-none">
+        <form onSubmit={createTicket} className="glass-panel rounded-2xl border border-surface-300! p-5 shadow-none">
           <h2 className="font-display text-lg font-bold text-surface-950">Create Support Ticket</h2>
           <div className="mt-4 grid gap-4 lg:grid-cols-[0.9fr_1.3fr_auto]">
             <input
               required
               value={newTicket.title}
               onChange={(e) => setNewTicket({ ...newTicket, title: e.target.value })}
-              className="rounded-xl border border-surface-200 bg-surface-50 px-4 py-3 text-sm font-medium outline-none focus:border-brand-300 focus:bg-white focus:ring-4 focus:ring-brand-100"
+              className="rounded-xl border border-surface-300 bg-surface-50 px-4 py-3 text-sm font-medium outline-none focus:border-brand-300 focus:bg-white focus:ring-4 focus:ring-brand-100"
               placeholder="Ticket title"
             />
             <input
               required
               value={newTicket.description}
               onChange={(e) => setNewTicket({ ...newTicket, description: e.target.value })}
-              className="rounded-xl border border-surface-200 bg-surface-50 px-4 py-3 text-sm font-medium outline-none focus:border-brand-300 focus:bg-white focus:ring-4 focus:ring-brand-100"
+              className="rounded-xl border border-surface-300 bg-surface-50 px-4 py-3 text-sm font-medium outline-none focus:border-brand-300 focus:bg-white focus:ring-4 focus:ring-brand-100"
               placeholder="Describe the issue"
             />
             <button className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/25 transition hover:brightness-110 active:scale-[0.99]">
@@ -528,14 +528,14 @@ export default function Complaints() {
       )}
 
       {/* TICKETS LIST TABLE */}
-      <div className="glass-panel overflow-hidden rounded-2xl border border-surface-200 shadow-none">
+      <div className="glass-panel overflow-hidden rounded-2xl border border-surface-300! shadow-none">
         {/* Desktop View */}
         <div className="hidden md:block overflow-x-auto">
           {activeTab === 'user-support' ? (
             /* USER SUPPORT TABLE (GRIEVANCES) */
             <Table className="min-w-[700px] w-full text-left">
               <TableHeader>
-                <TableRow className="border-b border-surface-200 bg-surface-50 text-xs font-bold uppercase tracking-wide text-surface-500 hover:bg-surface-50">
+                <TableRow className="border-b border-surface-300 bg-surface-50 text-xs font-bold uppercase tracking-wide text-surface-500 hover:bg-surface-50">
                   <TableHead className="h-auto px-4 py-3 text-surface-500">Ticket / Concern</TableHead>
                   <TableHead className="h-auto px-4 py-3 text-surface-500">Raised By</TableHead>
                   <TableHead className="h-auto px-4 py-3 text-surface-500">Status</TableHead>
@@ -546,7 +546,7 @@ export default function Complaints() {
               <TableBody>
                 {isLoading ? (
                   Array.from({ length: 5 }).map((_, index) => (
-                    <TableRow key={index} className="border-t border-surface-100 border-b-0 hover:bg-transparent">
+                    <TableRow key={index} className="border-t border-surface-200 border-b-0 hover:bg-transparent">
                       <TableCell className="p-4 px-4 py-3"><Skeleton className="h-12 w-72" /></TableCell>
                       <TableCell className="p-4 px-4 py-3"><Skeleton className="h-10 w-44" /></TableCell>
                       <TableCell className="p-4 px-4 py-3"><Skeleton className="h-8 w-28" /></TableCell>
@@ -571,7 +571,7 @@ export default function Complaints() {
                         key={item.id}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        className="border-t border-surface-100 border-b-0 transition-colors hover:bg-blue-50/50 cursor-pointer"
+                        className="border-t border-surface-200 border-b-0 transition-colors hover:bg-blue-50/50 cursor-pointer"
                         onClick={() => { setSelectedItem(item); setSelectedType('grievance'); }}
                       >
                         <TableCell className="p-4 px-4 py-3">
@@ -621,7 +621,7 @@ export default function Complaints() {
             /* PLATFORM SUPPORT TABLE (COMPLAINTS) */
             <Table className="min-w-[700px] w-full text-left">
               <TableHeader>
-                <TableRow className="border-b border-surface-200 bg-surface-50 text-xs font-bold uppercase tracking-wide text-surface-500 hover:bg-surface-50">
+                <TableRow className="border-b border-surface-300 bg-surface-50 text-xs font-bold uppercase tracking-wide text-surface-500 hover:bg-surface-50">
                   <TableHead className="h-auto px-4 py-3 text-surface-500">Ticket</TableHead>
                   {user?.role === 'SUPER_ADMIN' && <TableHead className="h-auto px-4 py-3 text-surface-500">Institute</TableHead>}
                   <TableHead className="h-auto px-4 py-3 text-surface-500">Status</TableHead>
@@ -632,7 +632,7 @@ export default function Complaints() {
               <TableBody>
                 {isLoading ? (
                   Array.from({ length: 5 }).map((_, index) => (
-                    <TableRow key={index} className="border-t border-surface-100 border-b-0 hover:bg-transparent">
+                    <TableRow key={index} className="border-t border-surface-200 border-b-0 hover:bg-transparent">
                       <TableCell className="p-4 px-4 py-3"><Skeleton className="h-12 w-72" /></TableCell>
                       {user?.role === 'SUPER_ADMIN' && <TableCell className="p-4 px-4 py-3"><Skeleton className="h-10 w-44" /></TableCell>}
                       <TableCell className="p-4 px-4 py-3"><Skeleton className="h-8 w-28" /></TableCell>
@@ -654,7 +654,7 @@ export default function Complaints() {
                         key={item.id}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        className="border-t border-surface-100 border-b-0 transition-colors hover:bg-blue-50/50 cursor-pointer"
+                        className="border-t border-surface-200 border-b-0 transition-colors hover:bg-blue-50/50 cursor-pointer"
                         onClick={() => { setSelectedItem(item); setSelectedType('complaint'); }}
                       >
                         <TableCell className="p-4 px-4 py-3">
@@ -720,7 +720,7 @@ export default function Complaints() {
         </div>
 
         {/* Mobile View */}
-        <div className="block md:hidden divide-y divide-surface-100">
+        <div className="block md:hidden divide-y divide-surface-200">
           {activeTab === 'user-support' ? (
             /* USER SUPPORT CARDS (GRIEVANCES) */
             isLoading ? (
@@ -761,7 +761,7 @@ export default function Complaints() {
                       <p className="text-xs font-medium text-surface-500 line-clamp-2">{item.description}</p>
                     </div>
 
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-t border-surface-50 pt-2 text-xs">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-t border-surface-200 pt-2 text-xs">
                       <div>
                         <p className="font-bold text-surface-800">{item.raised_by_name || 'Anonymous'}</p>
                         <span className={`text-[10px] font-bold uppercase ${roleLabel === 'Teacher' ? 'text-violet-600' : 'text-blue-600'}`}>
@@ -834,7 +834,7 @@ export default function Complaints() {
                       </div>
                     )}
 
-                    <div className="flex items-center justify-between gap-2 border-t border-surface-50 pt-2 text-xs">
+                    <div className="flex items-center justify-between gap-2 border-t border-surface-200 pt-2 text-xs">
                       <p className="text-surface-500 font-medium">
                         Created: {new Date(item.createdAt).toLocaleDateString()}
                       </p>
@@ -871,7 +871,7 @@ export default function Complaints() {
               })
             ))}
         </div>
-        <div className="border-t border-surface-200 bg-white p-1">
+        <div className="border-t border-surface-300 bg-white p-1">
           <DataTablePagination
             page={page}
             limit={limit}

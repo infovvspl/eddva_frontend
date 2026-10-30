@@ -379,7 +379,7 @@ export default function Admins() {
               Add Administrator
             </button>
           ) : (
-            <div className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-bold text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
+            <div className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 bg-slate-50 px-4 py-2.5 text-xs font-bold text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
               <Lock className="size-3.5" />
               Only the primary admin can manage administrator access
             </div>
@@ -393,7 +393,7 @@ export default function Admins() {
             title: 'Total Administrators',
             value: dashboardKpis.total,
             subtitle: 'Institute admin roles',
-            card: 'border-blue-100 from-white to-blue-50/80',
+            card: 'border-blue-200 from-white to-blue-50/80',
             blob: 'bg-blue-100',
             tile: 'from-blue-500 to-sky-500 shadow-blue-500/30',
             Icon: Shield,
@@ -402,7 +402,7 @@ export default function Admins() {
             title: 'Present Today',
             value: dashboardKpis.presentToday,
             subtitle: 'Attendance today',
-            card: 'border-emerald-100 from-white to-emerald-50/80',
+            card: 'border-emerald-200 from-white to-emerald-50/80',
             blob: 'bg-emerald-100',
             tile: 'from-emerald-500 to-teal-500 shadow-emerald-500/30',
             Icon: CheckCircle2,
@@ -411,7 +411,7 @@ export default function Admins() {
             title: 'Portal Active Today',
             value: dashboardKpis.usedToday,
             subtitle: 'Admins accessed portal today',
-            card: 'border-violet-100 from-white to-violet-50/80',
+            card: 'border-violet-200 from-white to-violet-50/80',
             blob: 'bg-violet-100',
             tile: 'from-violet-500 to-indigo-500 shadow-violet-500/30',
             Icon: UserPlus,
@@ -420,7 +420,7 @@ export default function Admins() {
             title: 'Absent Today',
             value: dashboardKpis.absentToday,
             subtitle: 'Absent today',
-            card: 'border-rose-100 from-white to-rose-50/80',
+            card: 'border-rose-200 from-white to-rose-50/80',
             blob: 'bg-rose-100',
             tile: 'from-rose-500 to-orange-500 shadow-rose-500/30',
             Icon: XCircle,
@@ -453,15 +453,15 @@ export default function Admins() {
         ))}
       </div>
 
-      <div className="mt-5 glass-premium rounded-2xl">
-        <div className="relative z-20 border-b border-[rgba(37,99,235,0.10)] bg-white/60 px-4 py-4 backdrop-blur dark:border-slate-700 dark:bg-slate-900/40 space-y-3">
+      <div className="mt-5 glass-premium rounded-2xl border-slate-300!">
+        <div className="relative z-20 rounded-t-2xl border-b border-slate-300 bg-white/60 px-4 py-4 backdrop-blur dark:border-slate-700 dark:bg-slate-900/40 space-y-3">
           <div className="flex flex-wrap items-center gap-2">
-            <div className="inline-flex items-center gap-2 rounded-2xl border border-blue-100 bg-blue-50 px-3 py-2 text-sm font-bold text-blue-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+            <div className="inline-flex items-center gap-2 rounded-2xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-bold text-blue-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
               <Users className="size-4 text-blue-600" />
               {formatNumber(filtered.length)} results
             </div>
 
-            <div className="inline-flex items-center gap-2 rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 px-3 py-2 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+            <div className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 bg-white/90 px-3 py-2 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
               <Filter className="size-4 text-blue-600" />
               Filter
             </div>
@@ -477,7 +477,7 @@ export default function Admins() {
                 { value: "INACTIVE", label: "Inactive" },
               ]}
               className="w-full sm:w-44"
-              triggerClassName="flex size-full items-center justify-between gap-2 px-3 py-2 rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 text-sm font-semibold text-slate-700 outline-none hover:bg-slate-50 transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/15"
+              triggerClassName="flex size-full items-center justify-between gap-2 px-3 py-2 rounded-2xl border border-slate-300 bg-white/90 text-sm font-semibold text-slate-700 outline-none hover:bg-slate-50 transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/15"
             />
 
             {isPlatformSuperAdmin && (
@@ -489,7 +489,7 @@ export default function Admins() {
                   ...institutes.map((institute) => ({ value: institute.id, label: institute.name })),
                 ]}
                 className="w-full sm:w-44"
-                triggerClassName="flex size-full items-center justify-between gap-2 px-3 py-2 rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 text-sm font-semibold text-slate-700 outline-none hover:bg-slate-50 transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/15"
+                triggerClassName="flex size-full items-center justify-between gap-2 px-3 py-2 rounded-2xl border border-slate-300 bg-white/90 text-sm font-semibold text-slate-700 outline-none hover:bg-slate-50 transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/15"
               />
             )}
 
@@ -499,25 +499,25 @@ export default function Admins() {
                 value={searchQuery}
                 onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
                 placeholder="Search administrators…"
-                className="w-full rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 py-2 pl-9 pr-3 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                className="w-full rounded-2xl border border-slate-300 bg-white/90 py-2 pl-9 pr-3 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
               />
             </div>
 
-            <div className="flex items-center gap-2 rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 px-3 py-2 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+            <div className="flex items-center gap-2 rounded-2xl border border-slate-300 bg-white/90 px-3 py-2 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
               <Calendar className="size-4 text-slate-400" />
               <CustomSelect
                 value={selectedYear}
                 onChange={setSelectedYear}
                 options={years.map((y) => ({ value: y, label: y }))}
                 className="w-full sm:w-32"
-                triggerClassName="flex size-full items-center justify-between gap-2 px-3 py-2 rounded-2xl border border-[rgba(37,99,235,0.12)] bg-white/90 text-sm font-semibold text-slate-700 outline-none hover:bg-slate-50 transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/15"
+                triggerClassName="flex size-full items-center justify-between gap-2 px-3 py-2 rounded-2xl border border-slate-300 bg-white/90 text-sm font-semibold text-slate-700 outline-none hover:bg-slate-50 transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/15"
               />
             </div>
 
             <button
               type="button"
               onClick={clearAdminFilters}
-              className="inline-flex items-center justify-center rounded-2xl border border-[rgba(37,99,235,0.14)] bg-white/90 px-4 py-2 text-sm font-bold text-slate-700 shadow-sm transition hover:border-blue-300 hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+              className="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white/90 px-4 py-2 text-sm font-bold text-slate-700 shadow-sm transition hover:border-blue-300 hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
             >
               Clear Filters
             </button>
@@ -525,7 +525,7 @@ export default function Admins() {
             <button
               type="button"
               onClick={exportCsv}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[rgba(37,99,235,0.14)] bg-white/90 px-4 py-2 text-sm font-bold text-slate-700 shadow-sm transition hover:border-blue-300 hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white/90 px-4 py-2 text-sm font-bold text-slate-700 shadow-sm transition hover:border-blue-300 hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
             >
               <Download className="size-4" />
               Export
@@ -535,7 +535,7 @@ export default function Admins() {
 
         <div className="overflow-x-auto rounded-b-2xl overflow-hidden">
           <Table className="min-w-[980px] w-full text-left text-sm">
-            <TableHeader className="border-b border-slate-200 bg-slate-50 text-slate-500 dark:border-slate-800 dark:bg-slate-800/40 dark:text-slate-400">
+            <TableHeader className="border-b border-slate-300 bg-slate-50 text-slate-500 dark:border-slate-800 dark:bg-slate-800/40 dark:text-slate-400">
               <TableRow className="hover:bg-transparent border-b-0">
                 <TableHead className="h-auto px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Admin Name</TableHead>
                 <TableHead className="h-auto px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">School</TableHead>
@@ -544,7 +544,7 @@ export default function Admins() {
                 <TableHead className="h-auto px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Actions</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody className="divide-y divide-slate-100 dark:divide-slate-800 [&_tr]:border-b-0">
+            <TableBody className="divide-y divide-slate-200 dark:divide-slate-800 [&_tr]:border-b-0">
               {filtered.length === 0 ? (
                 <TableRow className="hover:bg-transparent">
                   <TableCell colSpan="5" className="px-5 py-12 text-center text-slate-400">
@@ -598,7 +598,7 @@ export default function Admins() {
                       <div className="flex items-center gap-2">
                         <Link
                           to={`/school/admin/teachers/${admin.id}`}
-                          className="group relative flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-all hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
+                          className="group relative flex size-8 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-500 transition-all hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
                         >
                           <Eye className="size-4" />
                           <span className="absolute -top-10 left-1/2 -translate-x-1/2 scale-0 rounded-lg bg-slate-900 px-2 py-1 text-[10px] font-bold text-white transition-all group-hover:scale-100">View</span>
@@ -606,7 +606,7 @@ export default function Admins() {
                         {canManageAdmins && !admin.isPrimaryAdmin && (
                           <button
                             onClick={() => openPermissionModal(admin)}
-                            className="group relative flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-all hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
+                            className="group relative flex size-8 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-500 transition-all hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
                             aria-label="Manage access"
                           >
                             <KeyRound className="size-4" />
@@ -616,7 +616,7 @@ export default function Admins() {
                         {canManageAdmins && (
                           <button
                             onClick={() => handleEdit(admin)}
-                            className="group relative flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-all hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
+                            className="group relative flex size-8 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-500 transition-all hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
                             aria-label="Edit administrator"
                           >
                             <Edit2 className="size-4" />
@@ -626,7 +626,7 @@ export default function Admins() {
                         {canManageAdmins && !admin.isPrimaryAdmin && (
                           <button
                             onClick={() => handleDelete(admin.id)}
-                            className="group relative flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-all hover:border-red-400 hover:bg-red-50 hover:text-red-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
+                            className="group relative flex size-8 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-500 transition-all hover:border-red-400 hover:bg-red-50 hover:text-red-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
                             aria-label="Delete administrator"
                           >
                             <Trash2 className="size-4" />
@@ -642,7 +642,7 @@ export default function Admins() {
           </Table>
         </div>
 
-        <div className="border-t border-slate-100 dark:border-slate-800 bg-white/60 dark:bg-slate-900/40">
+        <div className="rounded-b-2xl border-t border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-900/40">
           <DataTablePagination
             page={page}
             limit={limit}

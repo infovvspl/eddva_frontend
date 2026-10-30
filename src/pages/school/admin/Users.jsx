@@ -459,7 +459,7 @@ export default function Users() {
           )}
           <button
             onClick={exportData}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-surface-200 bg-white px-3 py-2 text-xs font-bold text-surface-700 transition hover:bg-surface-50 hover:text-brand-600 self-start sm:self-auto sm:px-4 sm:py-2 sm:text-sm"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-surface-300 bg-white px-3 py-2 text-xs font-bold text-surface-700 transition hover:bg-surface-50 hover:text-brand-600 self-start sm:self-auto sm:px-4 sm:py-2 sm:text-sm"
           >
             <Download className="size-4" />
             Export CSV
@@ -469,11 +469,11 @@ export default function Users() {
 
       {error && <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</div>}
 
-      <div className="glass-panel overflow-hidden rounded-2xl shadow-none border border-surface-200">
+      <div className="glass-panel overflow-hidden rounded-2xl shadow-none border border-surface-300!">
         {/* ── Mobile Filters ── */}
-        <div className="flex flex-col md:hidden gap-3 border-b border-surface-200 p-3 bg-surface-50">
+        <div className="flex flex-col md:hidden gap-3 border-b border-surface-300 p-3 bg-surface-50">
           <div className="flex items-center justify-between gap-2">
-            <div className="inline-flex items-center gap-1.5 rounded-full border border-surface-200 bg-surface-100 px-2.5 py-1 text-xs font-semibold text-surface-700">
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-surface-300 bg-surface-100 px-2.5 py-1 text-xs font-semibold text-surface-700">
               <Search className="size-3.5 text-blue-600" />
               <span>Users Filter</span>
             </div>
@@ -484,7 +484,7 @@ export default function Users() {
                 "flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full border transition",
                 showMobileFilters
                   ? "bg-blue-600 border-blue-700 text-white"
-                  : "bg-white border-surface-200 text-surface-700"
+                  : "bg-white border-surface-300 text-surface-700"
               )}
             >
               <Filter className="size-3.5" />
@@ -498,12 +498,12 @@ export default function Users() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by name, email..."
-              className="w-full rounded-xl border border-surface-200 bg-white py-2 pl-10 pr-4 text-sm font-medium outline-none transition focus:border-brand-300 focus:ring-4 focus:ring-brand-100"
+              className="w-full rounded-xl border border-surface-300 bg-white py-2 pl-10 pr-4 text-sm font-medium outline-none transition focus:border-brand-300 focus:ring-4 focus:ring-brand-100"
             />
           </div>
 
           {showMobileFilters && (
-            <div className="flex flex-col gap-2 pt-2 border-t border-surface-200">
+            <div className="flex flex-col gap-2 pt-2 border-t border-surface-300">
               <CustomSelect
                 value={roleFilter}
                 onChange={(val) => updateRoleFilter(val)}
@@ -544,7 +544,7 @@ export default function Users() {
         </div>
 
         {/* ── Desktop Filters ── */}
-        <div className="hidden md:flex flex-wrap items-center gap-3 border-b border-surface-200 p-4 bg-surface-50">
+        <div className="hidden md:flex flex-wrap items-center gap-3 border-b border-surface-300 p-4 bg-surface-50">
           <div className="w-40">
             <CustomSelect
               value={roleFilter}
@@ -592,7 +592,7 @@ export default function Users() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by name, email..."
-              className="w-full rounded-xl border border-surface-200 bg-white py-2 pl-10 pr-4 text-sm font-medium outline-none transition focus:border-brand-300 focus:ring-4 focus:ring-brand-100"
+              className="w-full rounded-xl border border-surface-300 bg-white py-2 pl-10 pr-4 text-sm font-medium outline-none transition focus:border-brand-300 focus:ring-4 focus:ring-brand-100"
             />
           </div>
         </div>
@@ -601,7 +601,7 @@ export default function Users() {
         <div className="hidden md:block overflow-x-auto">
           <Table className="w-full text-left">
             <TableHeader>
-              <TableRow className="border-b border-surface-200 bg-surface-50 text-xs font-bold uppercase tracking-wide text-surface-500 hover:bg-surface-50">
+              <TableRow className="border-b border-surface-300 bg-surface-50 text-xs font-bold uppercase tracking-wide text-surface-500 hover:bg-surface-50">
                 <TableHead className="h-auto px-4 py-3 text-surface-500">User</TableHead>
                 <TableHead className="h-auto px-4 py-3 text-surface-500">Role & Institute</TableHead>
                 <TableHead className="h-auto px-4 py-3 text-surface-500">Contact</TableHead>
@@ -613,7 +613,7 @@ export default function Users() {
             <TableBody>
               {loading ? (
                 Array.from({ length: 5 }).map((_, index) => (
-                  <TableRow key={index} className="border-t border-surface-100 border-b-0 hover:bg-transparent">
+                  <TableRow key={index} className="border-t border-surface-200 border-b-0 hover:bg-transparent">
                     <TableCell className="p-4 px-4 py-3"><Skeleton className="h-10 w-48" /></TableCell>
                     <TableCell className="p-4 px-4 py-3"><Skeleton className="h-8 w-40" /></TableCell>
                     <TableCell className="p-4 px-4 py-3"><Skeleton className="h-8 w-36" /></TableCell>
@@ -630,7 +630,7 @@ export default function Users() {
                 </TableRow>
               ) : (
                 users.map((item) => (
-                  <TableRow key={item.id} className="border-t border-surface-100 border-b-0 transition-colors hover:bg-blue-50/50">
+                  <TableRow key={item.id} className="border-t border-surface-200 border-b-0 transition-colors hover:bg-blue-50/50">
                     <TableCell className="p-4 px-4 py-3">
                       <div className="flex items-center gap-3">
                         <Avatar className="size-10 shrink-0 rounded-xl">
@@ -666,7 +666,7 @@ export default function Users() {
                     <TableCell className="p-4 px-4 py-3">
                       <button
                         onClick={() => setResetTarget(item)}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-surface-200 bg-white px-2.5 py-1.5 text-xs font-bold text-surface-700 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700 transition"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-surface-300 bg-white px-2.5 py-1.5 text-xs font-bold text-surface-700 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700 transition"
                         title="Reset password"
                       >
                         <KeyRound className="size-3.5" />
@@ -681,7 +681,7 @@ export default function Users() {
         </div>
 
         {/* Mobile View */}
-        <div className="block md:hidden divide-y divide-surface-100">
+        <div className="block md:hidden divide-y divide-surface-200">
           {loading ? (
             Array.from({ length: 5 }).map((_, index) => (
               <div key={index} className="p-4 space-y-3">
@@ -728,7 +728,7 @@ export default function Users() {
                 </div>
                 <button
                   onClick={() => setResetTarget(item)}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-surface-200 bg-white px-2.5 py-1.5 text-xs font-bold text-surface-700 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700 transition self-start"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-surface-300 bg-white px-2.5 py-1.5 text-xs font-bold text-surface-700 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700 transition self-start"
                 >
                   <KeyRound className="size-3.5" />
                   Reset Password
@@ -740,7 +740,7 @@ export default function Users() {
 
         {/* Pagination Controls */}
         {!loading && users.length > 0 && (
-          <div className="flex flex-col gap-3 border-t border-surface-200 bg-surface-50 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col gap-3 border-t border-surface-300 bg-surface-50 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
             <p className="text-xs font-medium text-surface-500 sm:text-sm">
               Showing <span className="font-bold text-surface-900">{pageStart}</span> to <span className="font-bold text-surface-900">{pageEnd}</span> of <span className="font-bold text-surface-900">{totalItems || users.length}</span> users
             </p>
@@ -761,14 +761,14 @@ export default function Users() {
                     { value: 100, label: '100' },
                   ]}
                   className="w-20"
-                  triggerClassName="flex h-9 w-full items-center justify-between gap-2 rounded-lg border border-surface-200 bg-white px-3 py-2 text-sm font-bold text-surface-700 outline-none transition hover:bg-surface-100 focus:border-brand-300 focus:ring-4 focus:ring-brand-100"
+                  triggerClassName="flex h-9 w-full items-center justify-between gap-2 rounded-lg border border-surface-300 bg-white px-3 py-2 text-sm font-bold text-surface-700 outline-none transition hover:bg-surface-100 focus:border-brand-300 focus:ring-4 focus:ring-brand-100"
                 />
               </div>
               <div className="flex w-full min-w-0 items-center justify-center gap-1 sm:w-auto sm:gap-1.5">
                 <button
                   onClick={() => setPage(p => Math.max(1, p - 1))}
                   disabled={page === 1}
-                  className="grid size-7 shrink-0 place-items-center rounded-lg border border-surface-200 bg-white text-surface-500 hover:bg-surface-100 disabled:opacity-50 sm:size-8"
+                  className="grid size-7 shrink-0 place-items-center rounded-lg border border-surface-300 bg-white text-surface-500 hover:bg-surface-100 disabled:opacity-50 sm:size-8"
                 >
                   <ChevronLeft className="size-4" />
                 </button>
@@ -785,7 +785,7 @@ export default function Users() {
                           className={`grid size-7 shrink-0 place-items-center rounded-full border text-xs font-bold transition sm:size-8 ${
                             isActive
                               ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm'
-                              : 'border-surface-200 bg-white text-surface-600 hover:border-indigo-300 hover:text-indigo-700'
+                              : 'border-surface-300 bg-white text-surface-600 hover:border-indigo-300 hover:text-indigo-700'
                           }`}
                         >
                           {pageNumber}
@@ -797,7 +797,7 @@ export default function Users() {
                 <button
                   onClick={() => setPage(p => Math.min(effectiveTotalPages, p + 1))}
                   disabled={page === effectiveTotalPages}
-                  className="grid size-7 shrink-0 place-items-center rounded-lg border border-surface-200 bg-white text-surface-500 hover:bg-surface-100 disabled:opacity-50 sm:size-8"
+                  className="grid size-7 shrink-0 place-items-center rounded-lg border border-surface-300 bg-white text-surface-500 hover:bg-surface-100 disabled:opacity-50 sm:size-8"
                 >
                   <ChevronRight className="size-4" />
                 </button>

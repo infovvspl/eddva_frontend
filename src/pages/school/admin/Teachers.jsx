@@ -453,7 +453,7 @@ export default function Teachers() {
               setImportResult(null);
               setIsImportModalOpen(true);
             }}
-            className="inline-flex items-center justify-center gap-1.5 rounded-xl sm:rounded-2xl border border-[rgba(37,99,235,0.14)] bg-white px-3 py-2 sm:px-5 sm:py-3 text-xs sm:text-sm font-bold text-slate-700 shadow-sm sm:shadow-md transition hover:bg-slate-50 active:scale-[0.99] dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+            className="inline-flex items-center justify-center gap-1.5 rounded-xl sm:rounded-2xl border border-slate-300 bg-white px-3 py-2 sm:px-5 sm:py-3 text-xs sm:text-sm font-bold text-slate-700 shadow-sm sm:shadow-md transition hover:bg-slate-50 active:scale-[0.99] dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
           >
             <Download className="size-4 sm:size-5 text-blue-600" />
             <span>Bulk Import</span>
@@ -474,7 +474,7 @@ export default function Teachers() {
             title: 'Total Teachers',
             value: dashboardKpis.total,
             subtitle: 'Teaching staff',
-            card: 'border-blue-100 from-white to-blue-50/80',
+            card: 'border-blue-200 from-white to-blue-50/80',
             blob: 'bg-blue-100',
             tile: 'from-blue-500 to-sky-500 shadow-blue-500/30',
             Icon: School,
@@ -483,7 +483,7 @@ export default function Teachers() {
             title: 'Present Today',
             value: dashboardKpis.presentToday,
             subtitle: 'Attendance today',
-            card: 'border-emerald-100 from-white to-emerald-50/80',
+            card: 'border-emerald-200 from-white to-emerald-50/80',
             blob: 'bg-emerald-100',
             tile: 'from-emerald-500 to-teal-500 shadow-emerald-500/30',
             Icon: CheckCircle2,
@@ -492,7 +492,7 @@ export default function Teachers() {
             title: 'New This Month',
             value: dashboardKpis.newThisMonth,
             subtitle: 'Recently added',
-            card: 'border-violet-100 from-white to-violet-50/80',
+            card: 'border-violet-200 from-white to-violet-50/80',
             blob: 'bg-violet-100',
             tile: 'from-violet-500 to-indigo-500 shadow-violet-500/30',
             Icon: UserPlus,
@@ -501,7 +501,7 @@ export default function Teachers() {
             title: 'Absent Today',
             value: dashboardKpis.absentToday,
             subtitle: 'Absent today',
-            card: 'border-rose-100 from-white to-rose-50/80',
+            card: 'border-rose-200 from-white to-rose-50/80',
             blob: 'bg-rose-100',
             tile: 'from-rose-500 to-orange-500 shadow-rose-500/30',
             Icon: XCircle,
@@ -534,8 +534,8 @@ export default function Teachers() {
         ))}
       </div>
 
-      <div className="mt-5 glass-premium rounded-2xl">
-        <div className="relative z-20 border-b border-[rgba(37,99,235,0.10)] bg-white/60 px-4 py-4 backdrop-blur dark:border-slate-700 dark:bg-slate-900/40">
+      <div className="mt-5 glass-premium rounded-2xl border-slate-300!">
+        <div className="relative z-20 rounded-t-2xl border-b border-slate-300 bg-white/60 px-4 py-4 backdrop-blur dark:border-slate-700 dark:bg-slate-900/40">
           {/* ── Search + all filters inline, no hide/show toggle ── */}
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative min-w-[180px] flex-1 max-w-xs">
@@ -544,7 +544,7 @@ export default function Teachers() {
                 value={searchQuery}
                 onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
                 placeholder="Search teachers…"
-                className="w-full rounded-xl border border-slate-200/80 bg-white/90 py-1.5 pl-8 pr-9 text-xs font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/15 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+                className="w-full rounded-xl border border-slate-300/80 bg-white/90 py-1.5 pl-8 pr-9 text-xs font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/15 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
               />
               <VoiceSearchButton
                 className="absolute right-1 top-1/2 -translate-y-1/2"
@@ -561,7 +561,7 @@ export default function Teachers() {
                 { value: "INACTIVE", label: "Inactive" },
               ]}
               className="w-36 shrink-0"
-              triggerClassName="flex size-full items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+              triggerClassName="flex size-full items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-slate-300 bg-white text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
             />
 
             {isPlatformSuperAdmin && (
@@ -573,7 +573,7 @@ export default function Teachers() {
                   ...institutes.map((institute) => ({ value: institute.id, label: institute.name })),
                 ]}
                 className="w-40 shrink-0"
-                triggerClassName="flex size-full items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+                triggerClassName="flex size-full items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-slate-300 bg-white text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
               />
             )}
 
@@ -586,7 +586,7 @@ export default function Teachers() {
               ]}
               disabled={isPlatformSuperAdmin && selectedInstituteId === 'ALL'}
               className="w-36 shrink-0"
-              triggerClassName="flex size-full items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 disabled:opacity-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+              triggerClassName="flex size-full items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-slate-300 bg-white text-xs font-semibold text-slate-700 disabled:opacity-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
             />
 
             <CustomSelect
@@ -598,10 +598,10 @@ export default function Teachers() {
               ]}
               disabled={selectedClassId === 'ALL' || (isPlatformSuperAdmin && selectedInstituteId === 'ALL')}
               className="w-36 shrink-0"
-              triggerClassName="flex size-full items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 disabled:opacity-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+              triggerClassName="flex size-full items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-slate-300 bg-white text-xs font-semibold text-slate-700 disabled:opacity-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
             />
 
-            <div className="flex shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200">
+            <div className="flex shrink-0 items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200">
               <Calendar className="size-3.5 text-slate-400" />
               <CustomSelect
                 value={selectedYear}
@@ -625,7 +625,7 @@ export default function Teachers() {
 
             {/* Right Action Badges & Buttons */}
             <div className="ml-auto flex shrink-0 items-center gap-2">
-              <div className="inline-flex items-center gap-1.5 rounded-xl border border-blue-100 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+              <div className="inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
                 <Users className="size-3.5 text-blue-500" />
                 <span>{formatNumber(filtered.length)} results</span>
               </div>
@@ -633,7 +633,7 @@ export default function Teachers() {
               <button
                 type="button"
                 onClick={exportCsv}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
               >
                 <Download className="size-3.5 text-slate-500" />
                 <span>Export</span>
@@ -645,7 +645,7 @@ export default function Teachers() {
         {/* Desktop View */}
         <div className="hidden md:block overflow-x-auto rounded-b-2xl overflow-hidden">
           <Table className="min-w-[980px] w-full text-left text-sm">
-            <TableHeader className="border-b border-slate-200 bg-slate-50 text-slate-500 dark:border-slate-800 dark:bg-slate-800/40 dark:text-slate-400">
+            <TableHeader className="border-b border-slate-300 bg-slate-50 text-slate-500 dark:border-slate-800 dark:bg-slate-800/40 dark:text-slate-400">
               <TableRow className="hover:bg-transparent border-b-0">
                 <TableHead className="h-auto px-4 py-3 text-[11px] font-bold uppercase tracking-wider sticky left-0 z-20 bg-slate-50 dark:bg-slate-850 text-slate-500 dark:text-slate-400">Teacher Name</TableHead>
                 <TableHead className="h-auto px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Email</TableHead>
@@ -654,7 +654,7 @@ export default function Teachers() {
                 <TableHead className="h-auto px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Actions</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody className="divide-y divide-slate-100 dark:divide-slate-800 [&_tr]:border-b-0">
+            <TableBody className="divide-y divide-slate-200 dark:divide-slate-800 [&_tr]:border-b-0">
               {filtered.length === 0 ? (
                 <TableRow className="hover:bg-transparent">
                   <TableCell colSpan="5" className="px-5 py-12 text-center text-slate-400">
@@ -731,14 +731,14 @@ export default function Teachers() {
                       <div className="flex items-center gap-2">
                         <Link
                           to={`/school/admin/teachers/${teacher.id}`}
-                          className="group relative flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-all hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
+                          className="group relative flex size-8 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-500 transition-all hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
                         >
                           <Eye className="size-4" />
                           <span className="absolute -top-10 left-1/2 -translate-x-1/2 scale-0 rounded-lg bg-slate-900 px-2 py-1 text-[10px] font-bold text-white transition-all group-hover:scale-100">View</span>
                         </Link>
                         <button
                           onClick={() => handleEdit(teacher)}
-                          className="group relative flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-all hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
+                          className="group relative flex size-8 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-500 transition-all hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
                           aria-label="Edit teacher"
                         >
                           <Edit2 className="size-4" />
@@ -754,7 +754,7 @@ export default function Teachers() {
         </div>
 
         {/* Mobile View */}
-        <div className="block md:hidden divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900 rounded-b-2xl overflow-hidden border border-t-0 border-slate-100 dark:border-slate-800">
+        <div className="block md:hidden divide-y divide-slate-200 dark:divide-slate-800 bg-white dark:bg-slate-900 rounded-b-2xl overflow-hidden border border-t-0 border-slate-200 dark:border-slate-800">
           {filtered.length === 0 ? (
             <div className="px-5 py-12 text-center text-slate-400 text-sm">
               No teachers found.
@@ -832,17 +832,17 @@ export default function Teachers() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-end gap-2 pt-2.5 border-t border-slate-50 dark:border-slate-800/40">
+                <div className="flex items-center justify-end gap-2 pt-2.5 border-t border-slate-200 dark:border-slate-800/40">
                   <Link
                     to={`/school/admin/teachers/${teacher.id}`}
-                    className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-slate-100 bg-white px-3 text-slate-500 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 text-xs font-bold"
+                    className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-slate-500 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 text-xs font-bold"
                   >
                     <Eye className="size-3.5" />
                     <span>View</span>
                   </Link>
                   <button
                     onClick={() => handleEdit(teacher)}
-                    className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-slate-100 bg-white px-3 text-slate-500 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 text-xs font-bold"
+                    className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-slate-500 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 text-xs font-bold"
                   >
                     <Edit2 className="size-3.5" />
                     <span>Edit</span>
@@ -853,7 +853,7 @@ export default function Teachers() {
           )}
         </div>
 
-        <div className="border-t border-slate-100 dark:border-slate-800 bg-white/60 dark:bg-slate-900/40">
+        <div className="rounded-b-2xl border-t border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-900/40">
           <DataTablePagination
             page={page}
             limit={limit}

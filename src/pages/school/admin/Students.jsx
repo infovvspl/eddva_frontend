@@ -547,7 +547,7 @@ export default function Students() {
     );
   }
 
-  return (    <div className="w-full px-3 sm:px-5 lg:px-8 xl:px-10">
+  return (    <div className="w-full pb-2 px-3 sm:px-5 lg:px-8 xl:px-10">
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 items-center gap-3">
           <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/30">
@@ -561,7 +561,7 @@ export default function Students() {
         <div className="flex flex-wrap gap-1.5 sm:gap-2">
           <Link
             to="/school/admin/student-promotion"
-            className="inline-flex items-center justify-center gap-1.5 rounded-xl sm:rounded-2xl border border-[rgba(37,99,235,0.14)] bg-white px-3 py-2 sm:px-5 sm:py-3 text-xs sm:text-sm font-bold text-slate-700 shadow-sm sm:shadow-md transition hover:bg-slate-50 active:scale-[0.99] dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+            className="inline-flex items-center justify-center gap-1.5 rounded-xl sm:rounded-2xl border border-slate-300 bg-white px-3 py-2 sm:px-5 sm:py-3 text-xs sm:text-sm font-bold text-slate-700 shadow-sm sm:shadow-md transition hover:bg-slate-50 active:scale-[0.99] dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
           >
             <ArrowUpRight className="size-4 sm:size-5 text-indigo-600" />
             <span>Promotion</span>
@@ -573,7 +573,7 @@ export default function Students() {
               setImportResult(null);
               setIsImportModalOpen(true);
             }}
-            className="inline-flex items-center justify-center gap-1.5 rounded-xl sm:rounded-2xl border border-[rgba(37,99,235,0.14)] bg-white px-3 py-2 sm:px-5 sm:py-3 text-xs sm:text-sm font-bold text-slate-700 shadow-sm sm:shadow-md transition hover:bg-slate-50 active:scale-[0.99] dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+            className="inline-flex items-center justify-center gap-1.5 rounded-xl sm:rounded-2xl border border-slate-300 bg-white px-3 py-2 sm:px-5 sm:py-3 text-xs sm:text-sm font-bold text-slate-700 shadow-sm sm:shadow-md transition hover:bg-slate-50 active:scale-[0.99] dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
           >
             <Download className="size-4 sm:size-5 text-blue-600" />
             <span>Bulk Import</span>
@@ -632,7 +632,7 @@ export default function Students() {
             title: 'Total Students',
             value: kpis.total,
             subtitle: 'Enrolled students',
-            card: 'border-blue-100 from-white to-blue-50/80',
+            card: 'border-blue-200 from-white to-blue-50/80',
             blob: 'bg-blue-100',
             tile: 'from-blue-500 to-sky-500 shadow-blue-500/30',
             Icon: GraduationCap,
@@ -641,7 +641,7 @@ export default function Students() {
             title: 'Present Today',
             value: kpis.presentToday,
             subtitle: 'Attendance today',
-            card: 'border-emerald-100 from-white to-emerald-50/80',
+            card: 'border-emerald-200 from-white to-emerald-50/80',
             blob: 'bg-emerald-100',
             tile: 'from-emerald-500 to-teal-500 shadow-emerald-500/30',
             Icon: CheckCircle2,
@@ -650,7 +650,7 @@ export default function Students() {
             title: 'New This Month',
             value: kpis.newThisMonth,
             subtitle: 'Recently added',
-            card: 'border-violet-100 from-white to-violet-50/80',
+            card: 'border-violet-200 from-white to-violet-50/80',
             blob: 'bg-violet-100',
             tile: 'from-violet-500 to-indigo-500 shadow-violet-500/30',
             Icon: UserPlus,
@@ -659,7 +659,7 @@ export default function Students() {
             title: 'Absent Today',
             value: kpis.absentToday,
             subtitle: 'Absent today',
-            card: 'border-rose-100 from-white to-rose-50/80',
+            card: 'border-rose-200 from-white to-rose-50/80',
             blob: 'bg-rose-100',
             tile: 'from-rose-500 to-orange-500 shadow-rose-500/30',
             Icon: XCircle,
@@ -671,7 +671,7 @@ export default function Students() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35, delay: 0.03 * idx }}
             className={cn(
-              'relative overflow-hidden rounded-2xl border bg-gradient-to-br p-3 transition-colors hover:border-slate-300 sm:p-4 dark:border-slate-800 dark:from-slate-900 dark:to-slate-900',
+              'relative overflow-hidden rounded-2xl border bg-gradient-to-br p-3 transition-colors hover:border-slate-400 sm:p-4 dark:border-slate-800 dark:from-slate-900 dark:to-slate-900',
               card.card,
             )}
           >
@@ -692,8 +692,8 @@ export default function Students() {
         ))}
       </div>
 
-      <div className="mt-5 glass-premium rounded-2xl">
-        <div className="relative z-20 border-b border-[rgba(37,99,235,0.10)] bg-white/60 px-4 py-4 backdrop-blur dark:border-slate-700 dark:bg-slate-900/40">
+      <div className="mt-5 glass-premium rounded-2xl border-slate-300!">
+        <div className="relative z-20 rounded-t-2xl border-b border-slate-300 bg-white/60 px-4 py-4 backdrop-blur dark:border-slate-700 dark:bg-slate-900/40">
           {/* ── Search + all filters inline, no hide/show toggle ── */}
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative min-w-[180px] flex-1 max-w-xs">
@@ -702,7 +702,7 @@ export default function Students() {
                 value={searchQuery}
                 onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
                 placeholder="Search students…"
-                className="w-full rounded-xl border border-slate-200/80 bg-white/90 py-1.5 pl-8 pr-9 text-xs font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/15 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+                className="w-full rounded-xl border border-slate-300 bg-white/90 py-1.5 pl-8 pr-9 text-xs font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/15 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
               />
               <VoiceSearchButton
                 className="absolute right-1 top-1/2 -translate-y-1/2"
@@ -719,7 +719,7 @@ export default function Students() {
                 { value: "INACTIVE", label: "Inactive" },
               ]}
               className="w-36 shrink-0"
-              triggerClassName="flex size-full items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+              triggerClassName="flex size-full items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-slate-300 bg-white text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
             />
 
             {isPlatformSuperAdmin && (
@@ -731,7 +731,7 @@ export default function Students() {
                   ...institutes.map((institute) => ({ value: institute.id, label: institute.name })),
                 ]}
                 className="w-40 shrink-0"
-                triggerClassName="flex size-full items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+                triggerClassName="flex size-full items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-slate-300 bg-white text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
               />
             )}
 
@@ -744,7 +744,7 @@ export default function Students() {
               ]}
               disabled={isPlatformSuperAdmin && selectedInstituteId === 'ALL'}
               className="w-36 shrink-0"
-              triggerClassName="flex size-full items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 disabled:opacity-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+              triggerClassName="flex size-full items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-slate-300 bg-white text-xs font-semibold text-slate-700 disabled:opacity-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
             />
 
             <CustomSelect
@@ -756,10 +756,10 @@ export default function Students() {
               ]}
               disabled={selectedClassId === 'ALL' || (isPlatformSuperAdmin && selectedInstituteId === 'ALL')}
               className="w-36 shrink-0"
-              triggerClassName="flex size-full items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 disabled:opacity-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+              triggerClassName="flex size-full items-center justify-between gap-2 px-3 py-1.5 rounded-xl border border-slate-300 bg-white text-xs font-semibold text-slate-700 disabled:opacity-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
             />
 
-            <div className="flex shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200">
+            <div className="flex shrink-0 items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200">
               <Calendar className="size-3.5 text-slate-400" />
               <CustomSelect
                 value={selectedYear}
@@ -791,7 +791,7 @@ export default function Students() {
               <button
                 type="button"
                 onClick={exportCsv}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
               >
                 <Download className="size-3.5 text-slate-500" />
                 <span>Export</span>
@@ -803,14 +803,14 @@ export default function Students() {
         {/* Desktop View */}
         <div className="hidden md:block overflow-x-auto rounded-b-2xl overflow-hidden">
           <Table className="min-w-[980px] w-full text-left text-sm">
-            <TableHeader className="border-b border-slate-200 bg-slate-50 text-slate-500 dark:border-slate-800 dark:bg-slate-800/40 dark:text-slate-400">
+            <TableHeader className="border-b border-slate-300 bg-slate-50 text-slate-500 dark:border-slate-800 dark:bg-slate-800/40 dark:text-slate-400">
               <TableRow className="hover:bg-transparent border-b-0">
                 <TableHead className="h-auto w-10 px-4 py-3">
                   <input
                     type="checkbox"
                     checked={allSelected}
                     onChange={toggleAll}
-                    className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    className="h-4 w-4 rounded border-slate-400 text-blue-600 focus:ring-blue-500"
                   />
                 </TableHead>
                 <TableHead className="h-auto px-4 py-3 text-[11px] font-bold uppercase tracking-wider sticky left-0 z-20 bg-slate-50 dark:bg-slate-850 text-slate-500 dark:text-slate-400">Student Name</TableHead>
@@ -820,7 +820,7 @@ export default function Students() {
                 <TableHead className="h-auto px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Actions</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody className="divide-y divide-slate-100 dark:divide-slate-800 [&_tr]:border-b-0">
+            <TableBody className="divide-y divide-slate-200 dark:divide-slate-800 [&_tr]:border-b-0">
               {filtered.length === 0 ? (
                 <TableRow className="hover:bg-transparent">
                   <TableCell colSpan="6" className="px-5 py-12 text-center text-slate-400">
@@ -835,7 +835,7 @@ export default function Students() {
                         type="checkbox"
                         checked={selectedIds.includes(student.id)}
                         onChange={() => toggleStudent(student.id)}
-                        className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                        className="h-4 w-4 rounded border-slate-400 text-blue-600 focus:ring-blue-500"
                       />
                     </TableCell>
                     <TableCell className="p-4 px-4 py-3 sticky left-0 z-20 bg-white transition-colors group-hover/row:bg-blue-50 dark:bg-slate-900 dark:group-hover/row:bg-slate-800">
@@ -902,14 +902,14 @@ export default function Students() {
                       <div className="flex items-center gap-2">
                         <Link
                           to={`/school/admin/students/${student.id}`}
-                          className="group relative flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-all hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
+                          className="group relative flex size-8 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-500 transition-all hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
                         >
                           <Eye className="size-4" />
                           <span className="absolute -top-10 left-1/2 -translate-x-1/2 scale-0 rounded-lg bg-slate-900 px-2 py-1 text-[10px] font-bold text-white transition-all group-hover:scale-100">View</span>
                         </Link>
                         <button
                           onClick={() => handleEditClick(student)}
-                          className="group relative flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-all hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
+                          className="group relative flex size-8 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-500 transition-all hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
                         >
                           <Edit2 className="size-4" />
                           <span className="absolute -top-10 left-1/2 -translate-x-1/2 scale-0 rounded-lg bg-slate-900 px-2 py-1 text-[10px] font-bold text-white transition-all group-hover:scale-100">Edit</span>
@@ -924,7 +924,7 @@ export default function Students() {
         </div>
 
         {/* Mobile View */}
-        <div className="block md:hidden divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900 rounded-b-2xl overflow-hidden border border-t-0 border-slate-100 dark:border-slate-800">
+        <div className="block md:hidden divide-y divide-slate-200 dark:divide-slate-800 bg-white dark:bg-slate-900 rounded-b-2xl overflow-hidden border border-t-0 border-slate-200 dark:border-slate-800">
           {filtered.length > 0 && (
             <button
               onClick={toggleAll}
@@ -934,7 +934,7 @@ export default function Students() {
                 type="checkbox"
                 checked={allSelected}
                 onChange={toggleAll}
-                className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                className="h-4 w-4 rounded border-slate-400 text-blue-600 focus:ring-blue-500"
               />
               {allSelected ? 'Deselect all' : 'Select all'}
             </button>
@@ -951,7 +951,7 @@ export default function Students() {
                     type="checkbox"
                     checked={selectedIds.includes(student.id)}
                     onChange={() => toggleStudent(student.id)}
-                    className="h-4 w-4 shrink-0 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    className="h-4 w-4 shrink-0 rounded border-slate-400 text-blue-600 focus:ring-blue-500"
                   />
                                     <Avatar className="size-10 shrink-0 rounded-xl border border-white bg-slate-100 dark:border-slate-800 dark:bg-slate-800">
                     <AvatarImage src={student.profileImage} alt={student.name} className="object-cover" />
@@ -1019,17 +1019,17 @@ export default function Students() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-end gap-2 pt-2.5 border-t border-slate-50 dark:border-slate-800/40">
+                <div className="flex items-center justify-end gap-2 pt-2.5 border-t border-slate-200 dark:border-slate-800/40">
                   <Link
                     to={`/school/admin/students/${student.id}`}
-                    className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-slate-100 bg-white px-3 text-slate-500 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 text-xs font-bold"
+                    className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 text-slate-500 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 text-xs font-bold"
                   >
                     <Eye className="size-3.5" />
                     <span>View</span>
                   </Link>
                   <button
                     onClick={() => handleEditClick(student)}
-                    className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-slate-100 bg-white px-3 text-slate-500 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 text-xs font-bold"
+                    className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 text-slate-500 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 text-xs font-bold"
                   >
                     <Edit2 className="size-3.5" />
                     <span>Edit</span>
@@ -1040,7 +1040,7 @@ export default function Students() {
           )}
         </div>
 
-        <div className="border-t border-slate-100 dark:border-slate-800 bg-white/60 dark:bg-slate-900/40">
+        <div className="rounded-b-2xl border-t border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-900/40">
           <DataTablePagination
             page={page}
             limit={limit}

@@ -52,7 +52,7 @@ const emptyForm: SubjectFormState = {
 };
 
 const fieldClassName =
-  'w-full rounded-lg border border-surface-200 bg-white px-4 py-2.5 text-sm font-semibold text-surface-900 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 dark:border-surface-800 dark:bg-surface-950 dark:text-white';
+  'w-full rounded-lg border border-surface-300 bg-white px-4 py-2.5 text-sm font-semibold text-surface-900 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 dark:border-surface-800 dark:bg-surface-950 dark:text-white';
 
 export default function Subjects() {
   const navigate = useNavigate();
@@ -269,15 +269,15 @@ export default function Subjects() {
         <SummaryCard icon={Layers} tone="emerald" label="Total Classes" value={classes.length} helper="Available classes" />
       </div>
 
-      <section className="mt-5 mb-2 overflow-hidden rounded-2xl border border-surface-200 bg-white dark:border-surface-800 dark:bg-surface-900">
-        <div className="flex flex-row items-center justify-between gap-2 border-b border-surface-200 p-3 sm:p-4 dark:border-surface-800">
+      <section className="mt-5 mb-2 overflow-hidden rounded-2xl border border-surface-300 bg-white dark:border-surface-800 dark:bg-surface-900">
+        <div className="flex flex-row items-center justify-between gap-2 border-b border-surface-300 p-3 sm:p-4 dark:border-surface-800">
           <div className="relative flex-1 max-w-[280px] sm:max-w-xs">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-surface-400" />
             <input
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
               placeholder="Search class..."
-              className="h-10 w-full rounded-xl border border-surface-200 bg-white pl-9 pr-4 text-sm font-medium outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 dark:border-surface-800 dark:bg-surface-950 dark:text-white"
+              className="h-10 w-full rounded-xl border border-surface-300 bg-white pl-9 pr-4 text-sm font-medium outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 dark:border-surface-800 dark:bg-surface-950 dark:text-white"
             />
           </div>
         </div>
@@ -285,7 +285,7 @@ export default function Subjects() {
         {/* Desktop View */}
         <div className="hidden md:block overflow-x-auto">
           <Table className="w-full min-w-[850px] text-left">
-            <TableHeader className="border-b border-surface-200 bg-surface-50 text-[11px] font-bold uppercase tracking-wider text-surface-600 dark:border-surface-800 dark:bg-surface-950/50 dark:text-surface-300">
+            <TableHeader className="border-b border-surface-300 bg-surface-50 text-[11px] font-bold uppercase tracking-wider text-surface-600 dark:border-surface-800 dark:bg-surface-950/50 dark:text-surface-300">
               <TableRow className="hover:bg-transparent border-b-0">
                 <TableHead className="h-auto px-4 py-3 text-surface-600 dark:text-surface-300">Class</TableHead>
                 <TableHead className="h-auto px-4 py-3 text-center text-surface-600 dark:text-surface-300">Subjects</TableHead>
@@ -295,7 +295,7 @@ export default function Subjects() {
                 <TableHead className="h-auto px-4 py-3 text-center text-surface-600 dark:text-surface-300">Actions</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody className="divide-y divide-surface-200 text-sm dark:divide-surface-800 [&_tr]:border-b-0">
+            <TableBody className="divide-y divide-surface-300 text-sm dark:divide-surface-800 [&_tr]:border-b-0">
               {filteredClasses.length === 0 ? (
                 <TableRow className="hover:bg-transparent">
                   <TableCell colSpan={6} className="px-5 py-12 text-center">
@@ -347,7 +347,7 @@ export default function Subjects() {
         </div>
 
         {/* Mobile View */}
-        <div className="block md:hidden divide-y divide-surface-200 dark:divide-surface-800 bg-white dark:bg-surface-900">
+        <div className="block md:hidden divide-y divide-surface-300 dark:divide-surface-800 bg-white dark:bg-surface-900">
           {filteredClasses.length === 0 ? (
             <div className="p-5 py-12 text-center text-sm">
               <p className="font-bold text-surface-900 dark:text-white">No matching classes found</p>
@@ -380,17 +380,17 @@ export default function Subjects() {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-surface-100 dark:border-surface-800/40">
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-surface-200 dark:border-surface-800/40">
                     <button
                       onClick={() => openClassSubjects(cls.id)}
-                      className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-surface-200 bg-white px-3 text-surface-600 hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600 text-xs font-bold dark:bg-surface-900 dark:border-surface-800 dark:text-surface-300"
+                      className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-surface-300 bg-white px-3 text-surface-600 hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600 text-xs font-bold dark:bg-surface-900 dark:border-surface-800 dark:text-surface-300"
                     >
                       <Eye className="size-3.5" />
                       <span>Subjects</span>
                     </button>
                     <button
                       onClick={() => handleOpenModal(undefined, cls.id)}
-                      className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-surface-200 bg-white px-3 text-surface-600 hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600 text-xs font-bold dark:bg-surface-900 dark:border-surface-800 dark:text-surface-300"
+                      className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-surface-300 bg-white px-3 text-surface-600 hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600 text-xs font-bold dark:bg-surface-900 dark:border-surface-800 dark:text-surface-300"
                     >
                       <Plus className="size-3.5" />
                       <span>Add</span>
@@ -399,7 +399,7 @@ export default function Subjects() {
                       <>
                         <button
                           onClick={() => handleOpenModal(classSubjects[0])}
-                          className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-surface-200 bg-white px-3 text-surface-600 hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600 text-xs font-bold dark:bg-surface-900 dark:border-surface-800 dark:text-surface-300"
+                          className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-surface-300 bg-white px-3 text-surface-600 hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600 text-xs font-bold dark:bg-surface-900 dark:border-surface-800 dark:text-surface-300"
                         >
                           <Edit2 className="size-3.5" />
                           <span>Edit</span>
@@ -554,9 +554,9 @@ function FormField({ label, children }: { label: string; children: React.ReactNo
 
 function SummaryCard({ icon: Icon, tone, label, value, helper }: { icon: any; tone: string; label: string; value: React.ReactNode; helper: string }) {
   const tones: Record<string, { card: string; blob: string; tile: string }> = {
-    blue: { card: 'border-blue-100 from-white to-blue-50/80', blob: 'bg-blue-100', tile: 'from-blue-500 to-sky-500 shadow-blue-500/30' },
-    emerald: { card: 'border-emerald-100 from-white to-emerald-50/80', blob: 'bg-emerald-100', tile: 'from-emerald-500 to-teal-500 shadow-emerald-500/30' },
-    indigo: { card: 'border-indigo-100 from-white to-indigo-50/80', blob: 'bg-indigo-100', tile: 'from-indigo-500 to-violet-500 shadow-indigo-500/30' },
+    blue: { card: 'border-blue-200 from-white to-blue-50/80', blob: 'bg-blue-100', tile: 'from-blue-500 to-sky-500 shadow-blue-500/30' },
+    emerald: { card: 'border-emerald-200 from-white to-emerald-50/80', blob: 'bg-emerald-100', tile: 'from-emerald-500 to-teal-500 shadow-emerald-500/30' },
+    indigo: { card: 'border-indigo-200 from-white to-indigo-50/80', blob: 'bg-indigo-100', tile: 'from-indigo-500 to-violet-500 shadow-indigo-500/30' },
   };
   const t = tones[tone] || tones.blue;
 
@@ -591,8 +591,8 @@ function StatusPill({ active }: { active: boolean }) {
 
 function IconButton({ icon: Icon, title, onClick, danger = false }: { icon: any; title: string; onClick: () => void; danger?: boolean }) {
   const colors = danger
-    ? 'border-red-100 text-red-500 hover:border-red-300 hover:bg-red-50 dark:border-red-900/60 dark:hover:bg-red-950/30'
-    : 'border-surface-200 text-surface-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600 dark:border-surface-800 dark:text-surface-300 dark:hover:bg-surface-800';
+    ? 'border-red-200 text-red-500 hover:border-red-300 hover:bg-red-50 dark:border-red-900/60 dark:hover:bg-red-950/30'
+    : 'border-surface-300 text-surface-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600 dark:border-surface-800 dark:text-surface-300 dark:hover:bg-surface-800';
 
   return (
     <button onClick={onClick} className={`grid size-8 place-items-center rounded-lg border transition-colors ${colors}`} title={title}>
