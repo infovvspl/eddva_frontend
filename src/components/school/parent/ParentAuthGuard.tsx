@@ -12,6 +12,7 @@ export interface ParentChild {
   section?: string | null;
   rollNumber?: string | null;
   admissionNo?: string | null;
+  profileImage?: string | null;
 }
 
 interface ParentContextType {

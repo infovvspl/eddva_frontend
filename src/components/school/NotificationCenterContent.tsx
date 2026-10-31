@@ -43,6 +43,8 @@ import {
 
 interface NotificationCenterContentProps {
   currentUser: { id: string; role: string; name: string };
+  /** "card" wraps the centre in a raised, rounded card with gradient accents. */
+  variant?: 'default' | 'card';
 }
 
 interface NotificationItem {
@@ -100,8 +102,10 @@ const PRIORITY_BADGE: Record<NotificationItem['priority'], string> = {
 };
 
 export default function NotificationCenterContent({
-  currentUser
+  currentUser,
+  variant = 'default',
 }: NotificationCenterContentProps) {
+  const card = variant === 'card';
   const { fetchUnreadCount: updateGlobalBadge } = useSchoolNotification();
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -477,12 +481,19 @@ export default function NotificationCenterContent({
   ];
 
   return (
-    <div className="w-full flex flex-col relative">
+    <div className={cn("w-full flex flex-col relative", card && "shrink-0 overflow-hidden rounded-[2rem] border border-slate-100 bg-white shadow-lg shadow-slate-200/60 ring-1 ring-slate-100")}>
       {/* Header */}
-      <div className="pb-6 max-md:px-4 max-md:pt-3 border-b border-slate-200/80 dark:border-slate-700/80 flex items-center justify-between shrink-0">
-        <div>
-          <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight m-0">Notifications Center</h2>
-          <span className="text-xs font-bold text-indigo-500 uppercase tracking-wide block mt-1">{totalUnread} Unread Alerts</span>
+      <div className={cn("pb-6 max-md:px-4 max-md:pt-3 border-b border-slate-200/80 dark:border-slate-700/80 flex items-center justify-between shrink-0", card && "px-6 pt-6 sm:px-8 max-md:px-4 max-md:pt-4")}>
+        <div className={cn(card && "flex items-center gap-4")}>
+          {card && (
+            <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/30">
+              <Bell size={24} />
+            </span>
+          )}
+          <div>
+          <h2 className={cn("text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight m-0", card && "text-[#112A46] leading-tight")}>Notifications Center</h2>
+          <span className={cn("text-xs font-bold text-indigo-500 uppercase tracking-wide block mt-1", card && "mt-1.5 w-fit rounded-full bg-indigo-50 px-2.5 py-0.5 text-indigo-600 ring-1 ring-indigo-100")}>{totalUnread} Unread Alerts</span>
+          </div>
         </div>
 
         <div className="flex items-center gap-3">
@@ -492,7 +503,7 @@ export default function NotificationCenterContent({
               if (!showPreferences) loadPreferences();
             }}
             className={cn(
-              "bg-transparent border-0 h-9 w-9 rounded-xl flex items-center justify-center text-slate-500 cursor-pointer transition-all duration-200 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white",
+              "bg-transparent border-0 h-9 w-9 rounded-xl flex items-center justify-center text-slate-500 cursor-pointer transition-all duration-200 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white", card && "bg-slate-50 ring-1 ring-slate-100 hover:bg-white hover:shadow-md",
               showPreferences && "!bg-indigo-100 !text-indigo-600 dark:!bg-indigo-500/20 dark:!text-indigo-400",
             )}
             title="Notification Preferences"
@@ -501,7 +512,7 @@ export default function NotificationCenterContent({
           </button>
           <button
             onClick={() => fetchNotifications(1, true)}
-            className="bg-transparent border-0 h-9 w-9 rounded-xl flex items-center justify-center text-slate-500 cursor-pointer transition-all duration-200 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white"
+            className={cn("bg-transparent border-0 h-9 w-9 rounded-xl flex items-center justify-center text-slate-500 cursor-pointer transition-all duration-200 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white", card && "bg-slate-50 ring-1 ring-slate-100 hover:bg-white hover:shadow-md")}
             title="Refresh"
           >
             <RefreshCw size={18} />
@@ -563,7 +574,7 @@ export default function NotificationCenterContent({
         /* Main Notifications Panel */
         <>
           {/* Filter bar & Search */}
-          <div className="pt-6 pb-4 max-md:px-4 flex flex-col gap-5">
+          <div className={cn("pt-6 pb-4 max-md:px-4 flex flex-col gap-5", card && "px-6 sm:px-8")}>
             <div className="relative w-full">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
               <Input
@@ -571,7 +582,7 @@ export default function NotificationCenterContent({
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder="Search notifications..."
-                className="w-full h-auto rounded-2xl pl-11 pr-4 py-3 text-sm font-medium"
+                className={cn("w-full h-auto rounded-2xl pl-11 pr-4 py-3 text-sm font-medium", card && "bg-slate-50/70 shadow-sm focus-visible:bg-white")}
               />
             </div>
 
@@ -586,7 +597,7 @@ export default function NotificationCenterContent({
                   <ToggleGroupItem
                     key={cat.key}
                     value={cat.key}
-                    className="h-auto px-4 py-2 rounded-xl text-[0.813rem] font-semibold text-slate-500 bg-transparent data-[state=on]:bg-indigo-600 data-[state=on]:text-white data-[state=on]:shadow-[0_4px_10px_rgba(79,70,229,0.25)] hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white"
+                    className={cn("h-auto px-4 py-2 rounded-xl text-[0.813rem] font-semibold text-slate-500 bg-transparent data-[state=on]:bg-indigo-600 data-[state=on]:text-white data-[state=on]:shadow-[0_4px_10px_rgba(79,70,229,0.25)] hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white", card && "data-[state=on]:bg-gradient-to-r data-[state=on]:from-blue-500 data-[state=on]:to-indigo-600 data-[state=on]:shadow-lg data-[state=on]:shadow-blue-500/30")}
                   >
                     {cat.label}
                   </ToggleGroupItem>
@@ -596,7 +607,7 @@ export default function NotificationCenterContent({
           </div>
 
           {/* Bulk Toolbar */}
-          <div className="py-2 pb-4 max-md:px-4 flex items-center justify-between border-b border-slate-200/80 dark:border-slate-700/80 shrink-0">
+          <div className={cn("py-2 pb-4 max-md:px-4 flex items-center justify-between border-b border-slate-200/80 dark:border-slate-700/80 shrink-0", card && "px-6 sm:px-8")}>
             <div className="flex items-center">
               <button
                 onClick={handleSelectAll}
@@ -634,7 +645,7 @@ export default function NotificationCenterContent({
           </div>
 
           {/* List */}
-          <div className="py-6 max-md:px-4 max-md:py-4" ref={scrollContainerRef}>
+          <div className={cn("py-6 max-md:px-4 max-md:py-4", card && "px-6 sm:px-8 bg-gradient-to-b from-slate-50/60 to-white")} ref={scrollContainerRef}>
             {loading && page === 1 ? (
               <div className="flex flex-col items-center justify-center p-12 gap-2 text-slate-500 text-sm font-semibold">
                 <Loader2 size={36} className="animate-spin text-indigo-600" />
@@ -642,7 +653,7 @@ export default function NotificationCenterContent({
               </div>
             ) : notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center min-h-[300px] text-slate-500 text-center">
-                <Bell size={48} className="text-slate-300 dark:text-slate-600 mb-4" />
+                <Bell size={card ? 56 : 48} className={cn("text-slate-300 dark:text-slate-600 mb-4", card && "rounded-2xl bg-white p-3.5 text-slate-400 shadow-md ring-1 ring-slate-100")} />
                 <h4 className="text-base font-bold text-slate-700 dark:text-slate-300 m-0 mb-1">No Notifications Yet</h4>
                 <p className="text-[0.813rem] m-0">You are all caught up!</p>
               </div>
@@ -656,8 +667,10 @@ export default function NotificationCenterContent({
                       onClick={() => handleOpenNotification(notif)}
                       className={cn(
                         "flex items-center max-md:items-start gap-4 max-md:gap-3 p-4 max-md:p-3 rounded-[1.25rem] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 cursor-pointer relative transition-all duration-200 hover:-translate-y-px hover:shadow-[0_4px_12px_rgba(15,23,42,0.05)] hover:border-slate-300 dark:hover:border-slate-600",
+                        card && "rounded-3xl border-slate-100 shadow-md shadow-slate-200/50 ring-1 ring-slate-100 hover:-translate-y-0.5 hover:shadow-lg",
                         PRIORITY_BORDER[notif.priority],
                         !notif.isRead && "bg-slate-50 dark:bg-slate-800/50",
+                        card && !notif.isRead && "bg-gradient-to-r from-blue-50/70 to-white",
                         isSelected && "!border-indigo-500 bg-indigo-500/[0.02] dark:bg-indigo-500/5",
                       )}
                     >
@@ -670,7 +683,7 @@ export default function NotificationCenterContent({
                       />
 
                       {/* Category Icon */}
-                      <div className="h-9 w-9 rounded-xl bg-slate-100 dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                      <div className={cn("h-9 w-9 rounded-xl bg-slate-100 dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0", card && "h-10 w-10 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-md shadow-blue-500/30 dark:bg-gradient-to-br dark:text-white")}>
                         {categoryIcons[notif.category] || categoryIcons.general}
                       </div>
 

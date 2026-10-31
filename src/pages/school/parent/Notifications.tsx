@@ -9,7 +9,7 @@ export default function ParentNotifications() {
 
   return (
     <div className="flex size-full flex-col">
-      <NotificationCenterContent currentUser={user} />
+      <NotificationCenterContent currentUser={user} variant="card" />
     </div>
   );
 }

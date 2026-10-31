@@ -1,14 +1,13 @@
 import React, { useState, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Calendar, FileText, CheckCircle2, CheckCircle, XCircle, Clock, BookOpen, Search, X, Trophy, Target, Award, MessageSquare, Loader2, BarChart2, Flame, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
+import { GraduationCap, Calendar, FileText, CheckCircle2, CheckCircle, XCircle, Clock, BookOpen, Search, X, Trophy, Target, Award, MessageSquare, Loader2, BarChart2, Flame, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, LabelList, Line, LineChart, ResponsiveContainer, Tooltip as RechartsTooltip, XAxis, YAxis } from "recharts";
 import { parentClient } from "@/lib/api/parent-client";
 import { useParentContext } from "@/components/school/parent/ParentAuthGuard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import api from '@/lib/api/school-client';
-import GlassCard from '@/components/school/GlassCard';
 import { formatDuration, formatDurationShort } from "@/lib/format";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { useSchoolFeature } from "@/hooks/use-school-feature";
@@ -34,38 +33,50 @@ export default function ParentChild() {
     setSearchParams(tab === "attendance" ? {} : { tab }, { replace: true });
   };
 
+  const tabs = [
+    { id: "attendance", label: "Attendance", icon: Calendar },
+    { id: "marks", label: "Report Card", icon: FileText },
+    { id: "performance", label: "Performance", icon: BarChart2 },
+    { id: "homework", label: "Homework", icon: BookOpen },
+    { id: "tests", label: "Tests", icon: Award },
+    { id: "screentime", label: "Screen Time", icon: Clock },
+    ...(hasPlanner ? [{ id: "planner", label: "Study Planner", icon: Sparkles }] : []),
+  ];
+
   return (
-    <div className="space-y-6 md:space-y-8">
-      <div>
-        <h2 className="text-2xl font-black text-slate-900 tracking-tight">Academic Progress</h2>
-        <p className="text-sm font-semibold text-slate-500">View detailed reports for your child</p>
+    <div className="space-y-6">
+      <div className="flex items-center gap-4">
+        <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/30">
+          <GraduationCap size={24} />
+        </span>
+        <div className="min-w-0">
+          <h2 className="text-2xl font-extrabold leading-tight tracking-tight text-[#112A46]">Academic Progress</h2>
+          <p className="text-sm font-semibold text-slate-500">View detailed reports for your child</p>
+        </div>
       </div>
 
-      <div className="flex overflow-x-auto rounded-2xl bg-white p-1.5 shadow-sm border border-slate-100 no-scrollbar">
-        {[
-          { id: "attendance", label: "Attendance" },
-          { id: "marks", label: "Report Card" },
-          { id: "performance", label: "Performance" },
-          { id: "homework", label: "Homework" },
-          { id: "tests", label: "Tests" },
-          { id: "screentime", label: "Screen Time" },
-          ...(hasPlanner ? [{ id: "planner", label: "Study Planner" }] : []),
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => selectTab(tab.id as ChildTab)}
-            className={`flex-1 rounded-xl px-4 py-2.5 text-sm font-bold transition-all whitespace-nowrap ${
-              activeTab === tab.id
-                ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
-                : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      <div className="no-scrollbar flex w-fit max-w-full gap-1.5 overflow-x-auto rounded-[1.25rem] border border-slate-100 bg-white p-1.5 shadow-lg shadow-slate-200/60 ring-1 ring-slate-100">
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          const active = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => selectTab(tab.id as ChildTab)}
+              className={`flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-bold transition-all ${
+                active
+                  ? "bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/30"
+                  : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+              }`}
+            >
+              <Icon className="size-4 shrink-0" />
+              {tab.label}
+            </button>
+          );
+        })}
       </div>
 
-      <div className="rounded-[2rem] bg-white p-4 sm:p-6 shadow-sm border border-slate-100 min-h-[400px]">
+      <div className="min-h-[400px] rounded-[2rem] border border-slate-100 bg-white p-4 shadow-lg shadow-slate-200/60 ring-1 ring-slate-100 sm:p-6">
         {activeTab === "attendance" && <AttendanceTab studentId={activeChildId} />}
         {activeTab === "marks" && <MarksTab studentId={activeChildId} />}
         {activeTab === "performance" && <PerformanceTab studentId={activeChildId} />}
@@ -74,6 +85,17 @@ export default function ParentChild() {
         {activeTab === "screentime" && <ScreenTimeTab studentId={activeChildId} />}
         {activeTab === "planner" && hasPlanner && activeChildId && <StudentStudyReport key={activeChildId} studentId={activeChildId} embedded />}
       </div>
+    </div>
+  );
+}
+
+function SectionTitle({ icon: Icon, iconClass, title }: { icon: React.ElementType; iconClass: string; title: string }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className={`flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${iconClass} text-white shadow-lg`}>
+        <Icon size={19} />
+      </span>
+      <h3 className="text-lg font-extrabold tracking-tight text-[#112A46]">{title}</h3>
     </div>
   );
 }
@@ -99,8 +121,8 @@ function PerformanceTab({ studentId }: { studentId: string | null }) {
 
   if (!analytics || !analytics.questionsAttempted) {
     return (
-      <div className="flex flex-col items-center justify-center text-center opacity-50 py-12">
-        <BarChart2 className="size-12 text-slate-400 mb-3" />
+      <div className="flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-slate-200 bg-gradient-to-br from-slate-50 to-white px-4 py-14 text-center">
+        <BarChart2 className="mb-3 size-14 rounded-2xl bg-white p-3.5 text-slate-400 shadow-md ring-1 ring-slate-100" />
         <p className="text-sm font-bold text-slate-600">No performance data yet</p>
         <p className="mt-1 text-xs font-semibold text-slate-400 max-w-xs">This will appear once your child's assessment results are published.</p>
       </div>
@@ -110,18 +132,18 @@ function PerformanceTab({ studentId }: { studentId: string | null }) {
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-3 gap-3">
-        <div className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-3 text-center">
-          <Target className="mx-auto size-4 text-emerald-600" />
+        <div className="rounded-2xl border border-[#BBF0D6] bg-gradient-to-br from-[#ECFDF5] to-[#D1FAE5] p-3 text-center transition-transform hover:-translate-y-0.5">
+          <span className="mx-auto flex size-6 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/30"><Target className="size-3.5" /></span>
           <p className="mt-1.5 text-lg sm:text-xl font-black text-emerald-700">{Math.round(analytics.overallAccuracy)}%</p>
           <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Accuracy</p>
         </div>
-        <div className="rounded-2xl border border-blue-100 bg-blue-50/50 p-3 text-center">
-          <BarChart2 className="mx-auto size-4 text-blue-600" />
+        <div className="rounded-2xl border border-[#CFE3FB] bg-gradient-to-br from-[#F0F7FF] to-[#DCEBFF] p-3 text-center transition-transform hover:-translate-y-0.5">
+          <span className="mx-auto flex size-6 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-md shadow-blue-500/30"><BarChart2 className="size-3.5" /></span>
           <p className="mt-1.5 text-lg sm:text-xl font-black text-blue-700">{analytics.questionsAttempted}</p>
           <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Attempted</p>
         </div>
-        <div className="rounded-2xl border border-amber-100 bg-amber-50/50 p-3 text-center">
-          <Flame className="mx-auto size-4 text-amber-600" />
+        <div className="rounded-2xl border border-[#FFDDB8] bg-gradient-to-br from-[#FFF7ED] to-[#FFEAD2] p-3 text-center transition-transform hover:-translate-y-0.5">
+          <span className="mx-auto flex size-6 items-center justify-center rounded-lg bg-gradient-to-br from-orange-400 to-orange-600 text-white shadow-md shadow-orange-500/30"><Flame className="size-3.5" /></span>
           <p className="mt-1.5 text-lg sm:text-xl font-black text-amber-700">{analytics.streakDays}</p>
           <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Day Streak</p>
         </div>
@@ -276,13 +298,13 @@ function AttendanceTab({ studentId }: { studentId: string | null }) {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h3 className="text-lg font-black text-slate-900">Attendance Record</h3>
+        <SectionTitle icon={Calendar} iconClass="from-blue-500 to-indigo-600 shadow-blue-500/30" title="Attendance Record" />
         <div className="flex items-center gap-3">
           <input
             type="month"
             value={month}
             onChange={(e) => setMonth(e.target.value)}
-            className="rounded-xl border-2 border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-bold text-slate-700 outline-none focus:border-blue-500"
+            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 shadow-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
           />
         </div>
       </div>
@@ -312,19 +334,20 @@ function AttendanceTab({ studentId }: { studentId: string | null }) {
 
         return (
           <div className="space-y-6">
-            <div className="grid grid-cols-3 gap-4 rounded-2xl bg-slate-50 p-4 border border-slate-100">
-              <div className="text-center">
-                <p className="text-xs font-black uppercase text-slate-400">Present</p>
-                <p className="text-2xl font-black text-emerald-600">{data?.present ?? 0}</p>
-              </div>
-              <div className="text-center">
-                <p className="text-xs font-black uppercase text-slate-400">Absent</p>
-                <p className="text-2xl font-black text-red-500">{data?.absent ?? 0}</p>
-              </div>
-              <div className="text-center">
-                <p className="text-xs font-black uppercase text-slate-400">Late</p>
-                <p className="text-2xl font-black text-amber-500">{data?.late ?? 0}</p>
-              </div>
+            <div className="grid grid-cols-3 gap-3 sm:gap-4">
+              {[
+                { label: "Present", value: data?.present ?? 0, icon: CheckCircle2, card: "from-[#ECFDF5] to-[#D1FAE5] border-[#BBF0D6]", tile: "from-emerald-500 to-teal-600 shadow-emerald-500/30" },
+                { label: "Absent", value: data?.absent ?? 0, icon: XCircle, card: "from-[#FEF2F2] to-[#FFE0E0] border-[#FBCFCF]", tile: "from-rose-500 to-red-600 shadow-rose-500/30" },
+                { label: "Late", value: data?.late ?? 0, icon: Clock, card: "from-[#FFF7ED] to-[#FFEAD2] border-[#FFDDB8]", tile: "from-orange-400 to-orange-600 shadow-orange-500/30" },
+              ].map((t) => (
+                <div key={t.label} className={`flex flex-col items-center gap-2 rounded-2xl border bg-gradient-to-br p-4 text-center transition-transform hover:-translate-y-0.5 ${t.card}`}>
+                  <span className={`flex size-10 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-lg ${t.tile}`}>
+                    <t.icon className="size-5" />
+                  </span>
+                  <p className="text-3xl font-black leading-none text-[#1E293B]">{t.value}</p>
+                  <p className="text-[11px] font-black uppercase tracking-wider text-[#64748B]">{t.label}</p>
+                </div>
+              ))}
             </div>
 
             <div className="grid grid-cols-7 gap-2">
@@ -334,7 +357,7 @@ function AttendanceTab({ studentId }: { studentId: string | null }) {
               {calendarDays.map((day, i) => (
                 <div
                   key={i}
-                  className={`flex aspect-square flex-col items-center justify-center rounded-xl border-2 text-sm font-bold transition-all ${
+                  className={`flex aspect-square flex-col items-center justify-center rounded-2xl border-2 text-sm font-bold transition-all hover:scale-[1.04] ${
                     day.status === 'present' ? 'border-emerald-100 bg-emerald-50 text-emerald-700' :
                     day.status === 'absent' ? 'border-red-100 bg-red-50 text-red-700 font-extrabold animate-pulse' :
                     day.status === 'late' ? 'border-amber-100 bg-amber-50 text-amber-700' :
@@ -353,8 +376,8 @@ function AttendanceTab({ studentId }: { studentId: string | null }) {
           </div>
         );
       })() : (
-        <div className="flex flex-col items-center justify-center text-center opacity-50 py-12">
-          <Calendar className="size-12 text-slate-400 mb-3" />
+        <div className="flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-slate-200 bg-gradient-to-br from-slate-50 to-white px-4 py-14 text-center">
+          <Calendar className="mb-3 size-14 rounded-2xl bg-white p-3.5 text-slate-400 shadow-md ring-1 ring-slate-100" />
           <p className="text-sm font-bold text-slate-600">No attendance data for this month</p>
         </div>
       )}
@@ -451,34 +474,34 @@ function ScreenTimeTab({ studentId }: { studentId: string | null }) {
 
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-black text-slate-900">Screen Time</h3>
+      <SectionTitle icon={Clock} iconClass="from-rose-500 to-red-600 shadow-rose-500/30" title="Screen Time" />
 
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4">
-        <div className="text-center rounded-2xl bg-slate-50 p-4 border border-slate-100">
+        <div className="text-center rounded-2xl border border-[#CFE3FB] bg-gradient-to-br from-[#F0F7FF] to-[#DCEBFF] p-4 transition-transform hover:-translate-y-0.5">
           <p className="text-xs font-black uppercase text-slate-400">Today</p>
           <p className="text-xl sm:text-2xl font-black text-blue-600">
             {weekLoading ? <Loader2 className="mx-auto size-5 animate-spin" /> : formatDurationShort(weekData?.todaySeconds)}
           </p>
         </div>
-        <div className="text-center rounded-2xl bg-slate-50 p-4 border border-slate-100">
+        <div className="text-center rounded-2xl border border-[#CFE3FB] bg-gradient-to-br from-[#EEF2FF] to-[#DDE3FF] p-4 transition-transform hover:-translate-y-0.5">
           <p className="text-xs font-black uppercase text-slate-400">This Week</p>
           <p className="text-xl sm:text-2xl font-black text-indigo-600">
             {weekLoading ? <Loader2 className="mx-auto size-5 animate-spin" /> : formatDurationShort(weekData?.totalSeconds)}
           </p>
         </div>
-        <div className="text-center rounded-2xl bg-slate-50 p-4 border border-slate-100">
+        <div className="text-center rounded-2xl border border-[#DDD3FB] bg-gradient-to-br from-[#F5F3FF] to-[#E7E0FF] p-4 transition-transform hover:-translate-y-0.5">
           <p className="text-xs font-black uppercase text-slate-400">This Month</p>
           <p className="text-xl sm:text-2xl font-black text-violet-600">
             {monthLoading ? <Loader2 className="mx-auto size-5 animate-spin" /> : formatDurationShort(monthData?.totalSeconds)}
           </p>
         </div>
-        <div className="text-center rounded-2xl bg-slate-50 p-4 border border-slate-100">
+        <div className="text-center rounded-2xl border border-[#FFDDB8] bg-gradient-to-br from-[#FFF7ED] to-[#FFEAD2] p-4 transition-transform hover:-translate-y-0.5">
           <p className="text-xs font-black uppercase text-slate-400">Daily Avg</p>
           <p className="text-xl sm:text-2xl font-black text-amber-600">
             {monthLoading ? <Loader2 className="mx-auto size-5 animate-spin" /> : formatDurationShort(dailyAverage)}
           </p>
         </div>
-        <div className="text-center rounded-2xl bg-slate-50 p-4 border border-slate-100">
+        <div className="text-center rounded-2xl border border-[#BBF0D6] bg-gradient-to-br from-[#ECFDF5] to-[#D1FAE5] p-4 transition-transform hover:-translate-y-0.5">
           <p className="text-xs font-black uppercase text-slate-400">Most Active</p>
           <p className="text-xl sm:text-2xl font-black text-emerald-600">
             {monthLoading ? (
@@ -502,7 +525,7 @@ function ScreenTimeTab({ studentId }: { studentId: string | null }) {
               key={v.id}
               onClick={() => setView(v.id)}
               className={`rounded-lg px-3.5 py-1.5 text-xs font-bold transition-colors ${
-                view === v.id ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-800"
+                view === v.id ? "bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-md shadow-blue-500/30" : "text-slate-500 hover:text-slate-800"
               }`}
             >
               {v.label}
@@ -515,7 +538,7 @@ function ScreenTimeTab({ studentId }: { studentId: string | null }) {
         <button
           onClick={() => setShowCategory((v) => !v)}
           className={`rounded-lg px-3.5 py-1.5 text-xs font-bold transition-colors ${
-            showCategory ? "bg-blue-600 text-white shadow-sm" : "bg-slate-100 text-slate-500 hover:text-slate-800"
+            showCategory ? "bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-md shadow-blue-500/30" : "bg-slate-100 text-slate-500 hover:text-slate-800"
           }`}
         >
           Category
@@ -535,12 +558,12 @@ function ScreenTimeTab({ studentId }: { studentId: string | null }) {
         ) : (
           <div className="space-y-6">
             {weekDays.length === 0 ? (
-              <div className="flex flex-col items-center justify-center text-center opacity-50 py-12">
-                <Clock className="size-12 text-slate-400 mb-3" />
+              <div className="flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-slate-200 bg-gradient-to-br from-slate-50 to-white px-4 py-14 text-center">
+                <Clock className="mb-3 size-14 rounded-2xl bg-white p-3.5 text-slate-400 shadow-md ring-1 ring-slate-100" />
                 <p className="text-sm font-bold text-slate-600">No screen time recorded this week yet</p>
               </div>
             ) : (
-              <div className="h-56 w-full rounded-2xl border border-slate-100 bg-white p-4">
+              <div className="h-56 w-full rounded-3xl border border-slate-100 bg-white p-4 shadow-md shadow-slate-200/50 ring-1 ring-slate-100">
                 <ChartContainer config={{ seconds: { label: 'Active time', color: 'hsl(var(--primary))' } }} className="h-full w-full aspect-auto">
                   <AreaChart data={weekChartData} margin={{ top: 12, right: 8, left: 0, bottom: 0 }}>
                     <defs>
@@ -586,7 +609,7 @@ function ScreenTimeTab({ studentId }: { studentId: string | null }) {
               type="month"
               value={month}
               onChange={(e) => setMonth(e.target.value)}
-              className="rounded-xl border-2 border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-bold text-slate-700 outline-none focus:border-blue-500"
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 shadow-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
             />
             <button
               type="button"
@@ -681,13 +704,13 @@ function ScreenTimeTab({ studentId }: { studentId: string | null }) {
           {yearLoading ? (
             <Skeleton className="h-64 w-full rounded-2xl" />
           ) : yearMonths.every((m) => !m.activeSeconds) ? (
-            <div className="flex flex-col items-center justify-center text-center opacity-50 py-12">
-              <Clock className="size-12 text-slate-400 mb-3" />
+            <div className="flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-slate-200 bg-gradient-to-br from-slate-50 to-white px-4 py-14 text-center">
+              <Clock className="mb-3 size-14 rounded-2xl bg-white p-3.5 text-slate-400 shadow-md ring-1 ring-slate-100" />
               <p className="text-sm font-bold text-slate-600">No screen time recorded in {yearSel}-{String((yearSel + 1) % 100).padStart(2, '0')}</p>
             </div>
           ) : (
             <>
-              <div className="h-64 w-full rounded-2xl border border-slate-100 bg-white p-4">
+              <div className="h-64 w-full rounded-3xl border border-slate-100 bg-white p-4 shadow-md shadow-slate-200/50 ring-1 ring-slate-100">
                 <ChartContainer config={{ seconds: { label: 'Active time', color: 'hsl(var(--primary))' } }} className="h-full w-full aspect-auto">
                   <AreaChart data={yearChartData} margin={{ top: 12, right: 8, left: 0, bottom: 0 }}>
                     <defs>
@@ -808,9 +831,7 @@ function MarksTab({ studentId }: { studentId: string | null }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-black text-slate-900">Academic Report Cards</h3>
-      </div>
+      <SectionTitle icon={FileText} iconClass="from-emerald-500 to-teal-600 shadow-emerald-500/30" title="Academic Report Cards" />
 
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -818,7 +839,7 @@ function MarksTab({ studentId }: { studentId: string | null }) {
           <Skeleton className="h-48 w-full rounded-3xl" />
         </div>
       ) : Object.keys(resultsByClass).length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
           {Object.entries(resultsByClass).map(([classKey, results]) => {
             const classNameVal = results[0]?.className || classKey;
             const academicYearVal = results[0]?.academicYear || '';
@@ -828,50 +849,70 @@ function MarksTab({ studentId }: { studentId: string | null }) {
             const overallPercentage = calculateReportCardPercentage(results);
             const cardStatus = statusByClassKey[classKey];
             const notYetApproved = cardStatus && cardStatus !== 'APPROVED';
+            const pctNumber = Number(overallPercentage) || 0;
+            const pctWidth = Math.max(0, Math.min(100, pctNumber));
+            const pctText = pctNumber >= 75 ? 'text-emerald-600' : pctNumber >= 60 ? 'text-amber-600' : 'text-rose-600';
+            const pctBar = pctNumber >= 75 ? 'bg-gradient-to-r from-emerald-400 to-teal-500' : pctNumber >= 60 ? 'bg-gradient-to-r from-amber-400 to-orange-500' : 'bg-gradient-to-r from-rose-400 to-red-500';
+            const openCard = () => navigate(`/school/parent/child/report-card?class=${encodeURIComponent(classNameVal)}&year=${encodeURIComponent(academicYearVal)}&studentId=${studentId}`);
 
             return (
-              <GlassCard
+              <div
                 key={classKey}
-                onClick={() => navigate(`/school/parent/child/report-card?class=${encodeURIComponent(classNameVal)}&year=${encodeURIComponent(academicYearVal)}&studentId=${studentId}`)}
-                className="group relative cursor-pointer p-6 rounded-3xl border border-slate-200/85 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-blue-500/50 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300 flex flex-col justify-between h-48 max-w-md w-full active:scale-[0.99] student-report-classes__card"
+                role="button"
+                tabIndex={0}
+                onClick={openCard}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    openCard();
+                  }
+                }}
+                className="group relative flex cursor-pointer flex-col overflow-hidden rounded-3xl border border-slate-100 bg-white p-4 shadow-md shadow-slate-200/60 ring-1 ring-slate-100 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 active:scale-[0.99]"
               >
-                <div className="space-y-2">
-                  <div className="flex justify-between items-start">
-                    <span className="px-3 py-1 rounded-xl bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 font-extrabold text-[10px] uppercase tracking-wider">
-                      {academicYearVal || 'Academic Year'}
-                    </span>
-                    <div className="size-8 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-blue-500 group-hover:bg-blue-50 dark:group-hover:bg-blue-950/30 transition-colors">
-                      <FileText size={16} />
-                    </div>
-                  </div>
+                <div className="pointer-events-none absolute -right-8 -top-8 size-24 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 opacity-70 transition-transform duration-500 group-hover:scale-125" />
+
+                <div className="relative flex items-start justify-between gap-3">
+                  <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-blue-600 ring-1 ring-blue-100">
+                    {academicYearVal || 'Academic Year'}
+                  </span>
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-md shadow-blue-500/30 transition-transform duration-300 group-hover:scale-105">
+                    <FileText size={17} />
+                  </span>
+                </div>
+
+                <div className="relative mt-3 flex-1 space-y-1.5">
                   {notYetApproved && (
-                    <span className="inline-block px-2.5 py-0.5 rounded-lg bg-amber-500/10 text-amber-700 font-extrabold text-[10px] uppercase tracking-wider">
+                    <span className="inline-block rounded-lg bg-amber-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-amber-700 ring-1 ring-amber-100">
                       {cardStatus === 'PUBLISHED' ? 'Awaiting Admin Approval' : 'Not Yet Published'}
                     </span>
                   )}
-                  <h4 className="text-lg font-black text-slate-800 dark:text-white leading-tight tracking-tight group-hover:text-blue-600 transition-colors">
+                  <h4 className="text-base font-extrabold leading-tight tracking-tight text-[#112A46] transition-colors group-hover:text-blue-600">
                     {classNameVal}
                   </h4>
-                  <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 line-clamp-2 pr-4 leading-normal">
+                  <p className="line-clamp-2 text-[11px] font-semibold leading-relaxed text-slate-400">
                     Subjects: {subjectsDisplay}
                   </p>
                 </div>
-                <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
-                  <div>
-                    <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Overall weighted result</div>
-                    <div className="text-xs font-black text-slate-400 dark:text-slate-500 mt-0.5">Report Card Score</div>
+
+                <div className="relative mt-4 border-t border-slate-100 pt-3">
+                  <div className="flex items-end justify-between gap-3">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Overall weighted result</p>
+                      <p className="mt-0.5 text-[11px] font-black text-slate-500">Report Card Score</p>
+                    </div>
+                    <p className={`text-2xl font-black leading-none ${pctText}`}>{overallPercentage}%</p>
                   </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-black text-blue-600 dark:text-blue-400">{overallPercentage}%</div>
+                  <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-slate-100">
+                    <div className={`h-full rounded-full ${pctBar}`} style={{ width: `${pctWidth}%` }} />
                   </div>
                 </div>
-              </GlassCard>
+              </div>
             );
           })}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center text-center opacity-50 py-12">
-          <BookOpen className="size-12 text-slate-400 mb-3" />
+        <div className="flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-slate-200 bg-gradient-to-br from-slate-50 to-white px-4 py-14 text-center">
+          <BookOpen className="mb-3 size-14 rounded-2xl bg-white p-3.5 text-slate-400 shadow-md ring-1 ring-slate-100" />
           <p className="text-sm font-bold text-slate-600">No report cards available yet</p>
         </div>
       )}
@@ -897,7 +938,7 @@ function HomeworkTab({ studentId }: { studentId: string | null }) {
             key={f}
             onClick={() => setFilter(f)}
             className={`rounded-xl px-4 py-1.5 text-sm font-bold whitespace-nowrap transition-colors ${
-              filter === f ? "bg-slate-800 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              filter === f ? "bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-md shadow-blue-500/30" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
             }`}
           >
             {f}
@@ -913,9 +954,9 @@ function HomeworkTab({ studentId }: { studentId: string | null }) {
       ) : data?.homework?.length > 0 ? (
         <div className="space-y-4">
           {data.homework.map((hw: any, i: number) => (
-            <div key={hw.id ?? i} className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm hover:border-blue-200 transition-colors">
+            <div key={hw.id ?? i} className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-2xl border border-slate-100 bg-white p-4 shadow-md shadow-slate-200/50 ring-1 ring-slate-100 transition-all hover:-translate-y-0.5 hover:shadow-lg">
               <div className="flex items-start gap-4">
-                <div className="mt-1 flex size-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100 font-black text-xs uppercase">
+                <div className="mt-0.5 flex size-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/30 font-black text-xs uppercase">
                   {(hw.subject ?? hw.title ?? "?").toString().substring(0, 3)}
                 </div>
                 <div>
@@ -947,8 +988,8 @@ function HomeworkTab({ studentId }: { studentId: string | null }) {
           ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center text-center opacity-50 py-12">
-          <FileText className="size-12 text-slate-400 mb-3" />
+        <div className="flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-slate-200 bg-gradient-to-br from-slate-50 to-white px-4 py-14 text-center">
+          <FileText className="mb-3 size-14 rounded-2xl bg-white p-3.5 text-slate-400 shadow-md ring-1 ring-slate-100" />
           <p className="text-sm font-bold text-slate-600">No homework found for "{filter}"</p>
         </div>
       )}
@@ -1090,7 +1131,7 @@ function TestsTab({ studentId }: { studentId: string | null }) {
         ) : data?.upcoming?.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {data.upcoming.map((test: any, i: number) => (
-              <div key={test.id ?? i} className="rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 p-5 text-white shadow-lg shadow-indigo-500/20">
+              <div key={test.id ?? i} className="rounded-3xl bg-gradient-to-br from-indigo-500 to-purple-600 p-5 text-white shadow-lg shadow-indigo-500/25 transition-transform hover:-translate-y-0.5">
                 <div className="flex items-center justify-between mb-4">
                   <span className="rounded-lg bg-white/20 px-2 py-1 text-[10px] font-black uppercase tracking-wider backdrop-blur-sm">
                     {test.type || "Test"}
@@ -1125,7 +1166,7 @@ function TestsTab({ studentId }: { studentId: string | null }) {
               <div 
                 key={test.id ?? i} 
                 onClick={() => test.marksObtained !== null && test.marksObtained !== undefined && setSelectedTest(test)}
-                className={`flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-sm ${test.marksObtained !== null && test.marksObtained !== undefined ? 'cursor-pointer hover:border-indigo-500 hover:shadow-md transition-all active:scale-[0.99]' : ''}`}
+                className={`flex items-center justify-between rounded-2xl border border-slate-100 bg-white p-4 shadow-md shadow-slate-200/50 ring-1 ring-slate-100 ${test.marksObtained !== null && test.marksObtained !== undefined ? 'cursor-pointer hover:border-indigo-500 hover:shadow-md transition-all active:scale-[0.99]' : ''}`}
               >
                 <div>
                   <h4 className="text-[15px] font-black text-slate-900">{test.title}</h4>

@@ -4,27 +4,28 @@ import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
   CalendarCheck,
-  ChevronDown,
+  CalendarClock,
+  CheckCircle2,
+  ChevronRight,
   ClipboardList,
   Clock,
   FileText,
   ShieldCheck,
-  TrendingUp,
-  UserRound,
   Sparkles,
-  CheckCircle2,
-  CalendarClock,
+  TrendingUp,
+  Wallet,
 } from "lucide-react";
+import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { useAuth } from "@/context/SchoolAuthContext";
 import { parentClient } from "@/lib/api/parent-client";
 import { formatDurationShort } from "@/lib/format";
 import { useParentContext, type ParentChild } from "@/components/school/parent/ParentAuthGuard";
 import { Skeleton } from "@/components/ui/skeleton";
-import StudentAvatar from "@/assets/images/Student_Avatar.png";
 import SmartCalendar from "@/components/school/SmartCalendar";
 import MaintenanceBroadcastBanner from "@/components/shared/MaintenanceBroadcastBanner";
 import { CustomSelect } from "@/components/ui/CustomSelect";
 import { cn } from "@/lib/utils";
+import BgBanner from "@/assets/images/bgbanner6.png";
 
 type Tone = "blue" | "emerald" | "amber" | "rose" | "violet" | "slate";
 
@@ -128,101 +129,63 @@ export default function ParentDashboard() {
   const analytics = buildAnalytics(summaryQuery.data, attendanceQuery.data, marksQuery.data, homeworkQuery.data, testsQuery.data);
   const feeNotice = buildFeeNotice(feeQuery.data);
 
+  const attTone = attendanceTone(analytics.attendancePct);
+  const attendanceChart = [
+    { name: "Present", value: analytics.presentDays, color: "#10B981" },
+    { name: "Absent", value: analytics.absentDays, color: "#EF4444" },
+    { name: "Leave", value: analytics.leaveDays, color: "#F59E0B" },
+  ].filter((slice) => slice.value > 0);
+
   return (
-    <div className="space-y-5 pb-10">
+    <div className="space-y-6 pb-10">
       <MaintenanceBroadcastBanner />
-      {/* Top Grid for Welcome Card and Smart Calendar */}
-      <div className="grid gap-6 grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 items-stretch">
-        <motion.section
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="lg:col-span-2 xl:col-span-3 relative overflow-hidden rounded-[2rem] bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 p-5 sm:p-6 text-white shadow-xl border border-indigo-400/30 flex flex-col justify-between"
-        >
-          {/* Glowing Ambient Radial Overlays */}
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.2),transparent_50%)] pointer-events-none" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_80%,rgba(56,189,248,0.25),transparent_50%)] pointer-events-none" />
-          <div className="absolute -right-16 -top-16 size-48 rounded-full bg-white/10 blur-3xl pointer-events-none" />
 
-          <div className="relative z-10 flex flex-col xl:flex-row xl:items-center justify-between gap-5">
-            {/* Left Info Column */}
-            <div className="flex-1 space-y-2.5 min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-white/20 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-white border border-white/30 backdrop-blur-md shadow-xs">
-                  <ShieldCheck className="size-3.5 text-blue-200 shrink-0" /> Parent Oversight Hub
-                </span>
-                <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-emerald-400/25 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-emerald-100 border border-emerald-300/30 backdrop-blur-md shadow-xs">
-                  Academic Year 2025–26
-                </span>
-              </div>
+      {/* Welcome + active child */}
+      <section className="relative min-h-[280px] overflow-hidden rounded-[2rem] shadow-xl shadow-blue-900/10">
+        <div className="absolute inset-0 bg-cover bg-[center_35%] bg-no-repeat" style={{ backgroundImage: `url(${BgBanner})` }} />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/60 to-black/10" />
+        <div className="pointer-events-none absolute -left-16 -top-16 size-64 rounded-full bg-blue-500/20 blur-3xl" />
 
-              <div>
-                <h1 className="font-display text-lg sm:text-2xl font-bold text-white tracking-tight leading-snug flex items-center gap-2">
-                  Welcome, {user?.name || "Parent"} <Sparkles className="size-5 shrink-0 text-white/80" />
-                </h1>
-                <p className="mt-0.5 text-white/90 font-medium text-xs sm:text-sm max-w-xl leading-relaxed">
-                  Weekly academic progress, attendance logs, homework tasks, and school notices for your children.
-                </p>
-              </div>
-
-              {/* Quick Status Chips */}
-              <div className="pt-1 flex flex-wrap items-center gap-2 text-xs">
-                <div className="inline-flex items-center gap-2 whitespace-nowrap rounded-xl bg-white/20 px-3 py-1.5 border border-white/25 text-white backdrop-blur-md shadow-xs">
-                  <span className="size-2 rounded-full bg-emerald-300 animate-pulse shrink-0" />
-                  <span className="font-semibold text-xs text-white">Student: {activeChild?.name || "Selected"}</span>
-                </div>
-                {analytics.attendancePct !== null && (
-                  <div className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl bg-white/20 px-3 py-1.5 border border-white/25 text-white backdrop-blur-md shadow-xs">
-                    <span className="text-xs font-bold text-emerald-300">{analytics.attendanceLabel}</span>
-                    <span className="text-[11px] text-white/90 font-medium">Attendance</span>
-                  </div>
-                )}
-                {analytics.averageMarksLabel !== "--" && (
-                  <div className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl bg-white/20 px-3 py-1.5 border border-white/25 text-white backdrop-blur-md shadow-xs">
-                    <span className="text-xs font-bold text-amber-200">{analytics.averageMarksLabel}</span>
-                    <span className="text-[11px] text-white/90 font-medium">Avg Marks</span>
-                  </div>
-                )}
-              </div>
+        <div className="relative z-10 flex min-h-[280px] flex-col justify-center gap-6 p-6 md:p-8 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex max-w-xl flex-col gap-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-white ring-1 ring-white/30 backdrop-blur">
+                <ShieldCheck className="size-3.5 shrink-0" /> Parent Oversight Hub
+              </span>
+              <span className="inline-flex items-center rounded-full bg-emerald-400/20 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-emerald-100 ring-1 ring-emerald-300/40 backdrop-blur">
+                Academic Year {academicYear()}
+              </span>
             </div>
 
-            {/* Right Child Switcher Card */}
-            <div className="w-full xl:w-auto shrink-0 xl:min-w-[260px] max-w-full">
-              <div className="rounded-2xl bg-white/20 p-3.5 backdrop-blur-xl border border-white/30 shadow-xl">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-white/90 mb-2 flex items-center justify-between">
-                  <span>Active Student</span>
-                  <span className="text-[9px] text-white/80 font-normal">
-                    {children.length > 1 ? `${children.length} Children Linked` : "Linked Profile"}
-                  </span>
-                </div>
-                <ChildSwitcher
-                  activeChild={activeChild}
-                  activeChildId={activeChildId}
-                  childrenList={children}
-                  setActiveChildId={setActiveChildId}
-                />
-              </div>
+            <div>
+              <h1 className="flex flex-wrap items-center gap-x-2 text-3xl font-extrabold leading-tight tracking-tight text-white md:text-4xl">
+                Welcome,
+                <span className="text-white">{user?.name || "Parent"}!</span>
+                {/* <Sparkles className="size-6 shrink-0 text-sky-300" /> */}
+              </h1>
+              <p className="mt-1.5 max-w-md text-sm font-medium leading-relaxed text-white/85">
+                Weekly academic progress, attendance logs, homework tasks, and school notices for your children.
+              </p>
             </div>
           </div>
-        </motion.section>
 
-        {/* Smart Calendar */}
-        <motion.div
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="hidden lg:flex lg:col-span-1 rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 flex-col justify-between"
-        >
-          <SmartCalendar />
-        </motion.div>
-      </div>
+          <ChildSwitcher
+            activeChild={activeChild}
+            activeChildId={activeChildId}
+            childrenList={children}
+            setActiveChildId={setActiveChildId}
+          />
+        </div>
+      </section>
 
-      <div className="grid gap-3 sm:gap-4 grid-cols-2 md:grid-cols-2 xl:grid-cols-4">
+      {/* Key numbers */}
+      <div className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 sm:grid-cols-3 xl:grid-cols-5">
         <MetricCard
           title="Attendance"
           value={analytics.attendanceLabel}
           change={`${analytics.presentDays}/${analytics.totalDays || analytics.presentDays + analytics.absentDays} present`}
           icon={CalendarCheck}
-          tone={attendanceTone(analytics.attendancePct)}
+          tone={attTone}
           loading={loading}
           index={0}
         />
@@ -262,63 +225,115 @@ export default function ParentDashboard() {
           loading={screenTimeQuery.isLoading}
           index={4}
           to="/school/parent/child?tab=screentime"
+          className="min-[480px]:col-span-2 sm:col-span-1"
         />
       </div>
 
-      <div className="grid gap-5">
-        <div className="space-y-5">
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-3">
+        {/* Main column */}
+        <div className="space-y-6 lg:col-span-2">
           <Panel
+            icon={CalendarCheck}
+            iconClass="from-blue-500 to-indigo-600 shadow-blue-500/30"
             title="Attendance Summary"
-            action={<Badge tone={attendanceTone(analytics.attendancePct)}>{analytics.attendanceLabel}</Badge>}
+            subtitle={`Class ${formatClass(activeChild) || "All Classes"} · this month`}
+            action={<Badge tone={attTone}>{getAttendanceStatusLabel(analytics.attendancePct)}</Badge>}
           >
             {loading ? (
-              <Skeleton className="h-20 rounded-2xl" />
+              <Skeleton className="h-44 rounded-2xl" />
+            ) : analytics.totalDays === 0 ? (
+              <EmptyState icon={CalendarCheck} text="No attendance recorded this month yet." />
             ) : (
-              <div className="space-y-4">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-sm font-black text-slate-800">Class {formatClass(activeChild) || "All Classes"}</p>
-                    <p className="mt-1 text-xs font-semibold text-slate-500">
-                      Status: <span className={`font-bold ${toneStyles[attendanceTone(analytics.attendancePct)].text}`}>{getAttendanceStatusLabel(analytics.attendancePct)}</span>
-                    </p>
+              <div className="flex flex-col items-center gap-6 sm:flex-row">
+                <div className="relative size-44 shrink-0">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={attendanceChart} dataKey="value" innerRadius={58} outerRadius={80} paddingAngle={3} cornerRadius={6} stroke="none">
+                        {attendanceChart.map((slice) => <Cell key={slice.name} fill={slice.color} />)}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                    <span className={`text-3xl font-black ${toneStyles[attTone].text}`}>{analytics.attendanceLabel}</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Present</span>
                   </div>
-                  <p className={`text-lg font-black ${toneStyles[attendanceTone(analytics.attendancePct)].text}`}>
-                    {analytics.attendanceLabel}
-                  </p>
                 </div>
-                <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
-                  <div
-                    className={`h-full rounded-full ${toneStyles[attendanceTone(analytics.attendancePct)].bar}`}
-                    style={{ width: `${analytics.attendancePct ?? 0}%` }}
-                  />
+                <div className="grid w-full flex-1 grid-cols-2 gap-2.5">
+                  {[
+                    { label: "Present", value: analytics.presentDays, dot: "bg-emerald-500", box: "bg-gradient-to-br from-[#ECFDF5] to-[#D1FAE5] text-emerald-700 ring-[#BBF0D6]" },
+                    { label: "Absent", value: analytics.absentDays, dot: "bg-rose-500", box: "bg-gradient-to-br from-[#FEF2F2] to-[#FFE0E0] text-rose-700 ring-[#FBCFCF]" },
+                    { label: "Leave", value: analytics.leaveDays, dot: "bg-amber-500", box: "bg-gradient-to-br from-[#FFF7ED] to-[#FFEAD2] text-amber-700 ring-[#FFDDB8]" },
+                    { label: "Total", value: analytics.totalDays, dot: "bg-slate-400", box: "bg-gradient-to-br from-[#F8FAFC] to-[#EEF2F7] text-slate-600 ring-slate-200" },
+                  ].map((row) => (
+                    <div key={row.label} className={`flex items-center justify-between rounded-2xl px-4 py-3.5 ring-1 transition-transform hover:-translate-y-0.5 ${row.box}`}>
+                      <span className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-wider">
+                        <span className={`size-2 rounded-full ${row.dot}`} /> {row.label}
+                      </span>
+                      <span className="text-xl font-black">{row.value}</span>
+                    </div>
+                  ))}
                 </div>
-                {analytics.totalDays > 0 && (
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 text-center text-[10px] font-bold uppercase tracking-wider mt-4">
-                    <div className="rounded-xl border border-emerald-100 bg-emerald-50/50 px-2 py-2 text-emerald-700 dark:border-emerald-900/30 dark:bg-emerald-950/20 dark:text-emerald-400">
-                      Present {analytics.presentDays}
-                    </div>
-                    <div className="rounded-xl border border-rose-100 bg-rose-50/50 px-2 py-2 text-rose-700 dark:border-rose-900/30 dark:bg-rose-950/20 dark:text-rose-400">
-                      Absent {analytics.absentDays}
-                    </div>
-                    <div className="rounded-xl border border-amber-100 bg-amber-50/50 px-2 py-2 text-amber-700 dark:border-amber-900/30 dark:bg-amber-950/20 dark:text-amber-400">
-                      Leave {analytics.leaveDays}
-                    </div>
-                    <div className="rounded-xl border border-slate-200 bg-slate-50 px-2 py-2 text-slate-600 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400">
-                      Total {analytics.totalDays}
-                    </div>
-                  </div>
-                )}
               </div>
             )}
           </Panel>
 
-          <Panel title="Fee Notice" action={<Link to="/school/parent/fees" className="text-xs font-bold text-indigo-600 hover:underline">View All</Link>}>
-            {feeQuery.isLoading ? (
-              <Skeleton className="h-20 rounded-2xl" />
+          <Panel
+            icon={Clock}
+            iconClass="from-rose-500 to-red-600 shadow-rose-500/30"
+            title="Screen Time"
+            subtitle="Active time per day"
+            action={
+              <div className="flex items-center gap-3">
+                <Badge tone="blue">{formatDurationShort(screenTime?.totalSeconds)} this week</Badge>
+                <Link to="/school/parent/child?tab=screentime" className="inline-flex items-center gap-0.5 whitespace-nowrap text-xs font-black text-indigo-600 hover:text-indigo-700">
+                  Details <ChevronRight className="size-3.5" />
+                </Link>
+              </div>
+            }
+          >
+            {screenTimeQuery.isLoading ? (
+              <Skeleton className="h-32 rounded-2xl" />
+            ) : screenTimeDays.length === 0 ? (
+              <EmptyState icon={Clock} text="No screen-time data yet." />
             ) : (
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="flex items-center gap-3 rounded-2xl bg-emerald-50/60 p-3.5">
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-white">
+              <div className="flex items-end gap-2 sm:gap-3">
+                {screenTimeDays.map((day) => {
+                  const heightPct = Math.max(6, Math.round((day.activeSeconds / screenTimeMaxSeconds) * 100));
+                  const label = new Date(`${day.date}T00:00:00`).toLocaleDateString("en-IN", { weekday: "short" });
+                  return (
+                    <div key={day.date} className="flex flex-1 flex-col items-center gap-1.5">
+                      <p className="text-[9px] font-bold text-slate-400">{formatDurationShort(day.activeSeconds)}</p>
+                      <div className="flex h-28 w-full items-end overflow-hidden rounded-lg bg-slate-100">
+                        <div className="w-full rounded-lg bg-gradient-to-t from-indigo-600 to-blue-400" style={{ height: `${heightPct}%` }} />
+                      </div>
+                      <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">{label}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </Panel>
+        </div>
+
+        {/* Side column */}
+        <div className="space-y-6">
+          <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-lg shadow-slate-200/60 ring-1 ring-slate-100">
+            <SmartCalendar />
+          </div>
+
+          <Panel
+            icon={Wallet}
+            iconClass="from-amber-400 to-orange-500 shadow-amber-500/30"
+            title="Fee Notice"
+            subtitle="Latest payment and next due date"
+            action={<Link to="/school/parent/fees" className="inline-flex items-center gap-0.5 whitespace-nowrap text-xs font-black text-indigo-600 hover:text-indigo-700">View all <ChevronRight className="size-3.5" /></Link>}
+          >
+            {feeQuery.isLoading ? (
+              <Skeleton className="h-28 rounded-2xl" />
+            ) : (
+              <div className="grid gap-3">
+                <div className="flex items-center gap-4 rounded-2xl bg-gradient-to-br from-[#ECFDF5] to-[#D1FAE5] p-4 ring-1 ring-[#BBF0D6]">
+                  <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/30">
                     <CheckCircle2 className="size-5" />
                   </span>
                   <div className="min-w-0">
@@ -331,12 +346,12 @@ export default function ParentDashboard() {
                         </p>
                       </>
                     ) : (
-                      <p className="text-xs font-semibold text-slate-400 italic">No payments yet.</p>
+                      <p className="text-xs font-semibold italic text-slate-400">No payments yet.</p>
                     )}
                   </div>
                 </div>
-                <div className={cn("flex items-center gap-3 rounded-2xl p-3.5", feeNotice.nextDue ? "bg-amber-50/60" : "bg-slate-50/60")}>
-                  <span className={cn("flex size-10 shrink-0 items-center justify-center rounded-xl text-white", feeNotice.nextDue ? "bg-amber-500" : "bg-slate-300")}>
+                <div className={cn("flex items-center gap-4 rounded-2xl p-4 ring-1", feeNotice.nextDue ? "bg-gradient-to-br from-[#FFF7ED] to-[#FFEAD2] ring-[#FFDDB8]" : "bg-gradient-to-br from-[#F8FAFC] to-[#EEF2F7] ring-slate-200")}>
+                  <span className={cn("flex size-12 shrink-0 items-center justify-center rounded-2xl text-white shadow-lg", feeNotice.nextDue ? "bg-gradient-to-br from-orange-400 to-orange-600 shadow-orange-500/30" : "bg-gradient-to-br from-slate-300 to-slate-400 shadow-slate-400/30")}>
                     <CalendarClock className="size-5" />
                   </span>
                   <div className="min-w-0">
@@ -349,50 +364,10 @@ export default function ParentDashboard() {
                         </p>
                       </>
                     ) : (
-                      <p className="text-xs font-semibold text-slate-400 italic">Nothing due right now.</p>
+                      <p className="text-xs font-semibold italic text-slate-400">Nothing due right now.</p>
                     )}
                   </div>
                 </div>
-              </div>
-            )}
-          </Panel>
-
-          <Panel
-            title="Screen Time"
-            action={
-              <div className="flex items-center gap-2">
-                <Badge tone="blue">{formatDurationShort(screenTime?.totalSeconds)} this week</Badge>
-                <Link
-                  to="/school/parent/child?tab=screentime"
-                  className="text-xs font-black text-indigo-600 hover:text-indigo-700 whitespace-nowrap"
-                >
-                  View details →
-                </Link>
-              </div>
-            }
-          >
-            {screenTimeQuery.isLoading ? (
-              <Skeleton className="h-20 rounded-2xl" />
-            ) : screenTimeDays.length === 0 ? (
-              <p className="text-xs font-semibold text-slate-400">No screen-time data yet.</p>
-            ) : (
-              <div className="flex items-end gap-2 sm:gap-3">
-                {screenTimeDays.map((day) => {
-                  const heightPct = Math.max(6, Math.round((day.activeSeconds / screenTimeMaxSeconds) * 100));
-                  const label = new Date(`${day.date}T00:00:00`).toLocaleDateString("en-IN", { weekday: "short" });
-                  return (
-                    <div key={day.date} className="flex flex-1 flex-col items-center gap-1.5">
-                      <p className="text-[9px] font-bold text-slate-400">{formatDurationShort(day.activeSeconds)}</p>
-                      <div className="flex h-20 w-full items-end overflow-hidden rounded-lg bg-slate-100">
-                        <div
-                          className="w-full rounded-lg bg-indigo-500"
-                          style={{ height: `${heightPct}%` }}
-                        />
-                      </div>
-                      <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">{label}</p>
-                    </div>
-                  );
-                })}
               </div>
             )}
           </Panel>
@@ -401,6 +376,15 @@ export default function ParentDashboard() {
     </div>
   );
 }
+
+const metricStyles: Record<Tone, { card: string; tile: string; foot: string; dot: string }> = {
+  blue: { card: "from-[#F0F7FF] to-[#DCEBFF] border-[#CFE3FB]", tile: "from-blue-500 to-blue-600 shadow-blue-500/30", foot: "text-[#2563EB]", dot: "bg-[#3B82F6]" },
+  emerald: { card: "from-[#ECFDF5] to-[#D1FAE5] border-[#BBF0D6]", tile: "from-emerald-500 to-teal-600 shadow-emerald-500/30", foot: "text-[#059669]", dot: "bg-[#10B981]" },
+  amber: { card: "from-[#FFF7ED] to-[#FFEAD2] border-[#FFDDB8]", tile: "from-orange-400 to-orange-600 shadow-orange-500/30", foot: "text-[#EA580C]", dot: "bg-[#F97316]" },
+  rose: { card: "from-[#FEF2F2] to-[#FFE0E0] border-[#FBCFCF]", tile: "from-rose-500 to-red-600 shadow-rose-500/30", foot: "text-[#DC2626]", dot: "bg-[#EF4444]" },
+  violet: { card: "from-[#F5F3FF] to-[#E7E0FF] border-[#DDD3FB]", tile: "from-violet-500 to-purple-600 shadow-violet-500/30", foot: "text-[#7C3AED]", dot: "bg-[#8B5CF6]" },
+  slate: { card: "from-[#F8FAFC] to-[#EEF2F7] border-[#E2E8F0]", tile: "from-slate-600 to-slate-800 shadow-slate-500/30", foot: "text-slate-600", dot: "bg-slate-400" },
+};
 
 function MetricCard({
   title,
@@ -411,6 +395,7 @@ function MetricCard({
   loading,
   index,
   to,
+  className,
 }: {
   title: string;
   value: string;
@@ -420,64 +405,71 @@ function MetricCard({
   loading: boolean;
   index: number;
   to?: string;
+  className?: string;
 }) {
-  const style = toneStyles[tone];
+  const style = metricStyles[tone];
+  const body = (
+    <>
+      <div className="pointer-events-none absolute -bottom-8 -right-8 size-28 rounded-full bg-white/50 transition-transform duration-500 group-hover:scale-125" />
+      <div className="relative flex items-start gap-3.5">
+        <span className={`flex size-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${style.tile} text-white shadow-lg`}>
+          <Icon className="size-6" />
+        </span>
+        <div className="flex min-w-0 flex-col">
+          {loading ? (
+            <Skeleton className="h-8 w-16 rounded-xl" />
+          ) : (
+            <p className="truncate text-3xl font-black leading-none text-[#1E293B]">{value}</p>
+          )}
+          <p className="mt-1.5 truncate text-sm font-bold text-[#64748B]">{title}</p>
+        </div>
+      </div>
+      <div className={`relative mt-4 flex items-center gap-1.5 text-[12px] font-bold ${style.foot}`}>
+        <span className={`size-2 shrink-0 rounded-full ${style.dot}`} />
+        <span className="truncate">{change}</span>
+        {to && <ChevronRight className="ml-auto size-4 shrink-0 transition-transform group-hover:translate-x-0.5" />}
+      </div>
+    </>
+  );
+  const cardClass = cn(
+    "group relative block overflow-hidden rounded-[1.5rem] border bg-gradient-to-br p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl sm:p-5",
+    style.card,
+    className,
+  );
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25, delay: index * 0.04 }}
-      className={`rounded-2xl sm:rounded-3xl border border-slate-100 bg-white p-3 sm:p-5 shadow-sm ${to ? "transition-all hover:border-blue-200 hover:shadow-md" : ""}`}
-    >
-      <MetricCardBody title={title} value={value} change={change} Icon={Icon} tone={tone} loading={loading} to={to} />
+    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: index * 0.04 }} className={cardClass}>
+      {to ? <Link to={to} className="block">{body}</Link> : body}
     </motion.div>
   );
 }
 
-function MetricCardBody({
+function Panel({
+  icon: Icon,
+  iconClass,
   title,
-  value,
-  change,
-  Icon,
-  tone,
-  loading,
-  to,
+  subtitle,
+  action,
+  children,
 }: {
+  icon: React.ElementType;
+  iconClass: string;
   title: string;
-  value: string;
-  change: string;
-  Icon: React.ElementType;
-  tone: Tone;
-  loading: boolean;
-  to?: string;
+  subtitle?: string;
+  action?: React.ReactNode;
+  children: React.ReactNode;
 }) {
-  const style = toneStyles[tone];
-  const content = (
-    <div className="flex items-start gap-2.5 sm:gap-4">
-      <span className={`flex size-9 sm:size-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl ${style.icon}`}>
-        <Icon className="size-4.5 sm:size-5" />
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="text-[9px] sm:text-[11px] font-black uppercase tracking-widest text-slate-400 truncate">{title}</p>
-        {loading ? (
-          <Skeleton className="mt-1.5 sm:mt-2 h-6 sm:h-8 w-16 sm:w-20 rounded-xl" />
-        ) : (
-          <p className="mt-0.5 sm:mt-1 text-lg sm:text-3xl font-black tracking-tight text-slate-950 truncate">{value}</p>
-        )}
-        <span className={`mt-2 sm:mt-3 inline-flex rounded-full px-1.5 py-0.5 text-[9px] sm:text-xs font-black ${style.pill} max-w-full truncate`}>
-          {change}
-        </span>
-      </div>
-    </div>
-  );
-  return to ? <Link to={to}>{content}</Link> : content;
-}
-
-function Panel({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm sm:p-6">
-      <div className="mb-5 flex items-center justify-between gap-4">
-        <h3 className="text-base font-black text-slate-900">{title}</h3>
+    <section className="rounded-[2rem] border border-slate-100 bg-white p-5 shadow-lg shadow-slate-200/60 ring-1 ring-slate-100 sm:p-6">
+      <div className="mb-5 flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className={`flex size-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${iconClass} text-white shadow-lg`}>
+            <Icon size={20} />
+          </span>
+          <div className="min-w-0">
+            <h3 className="truncate text-lg font-extrabold leading-tight tracking-tight text-[#112A46]">{title}</h3>
+            {subtitle && <p className="mt-0.5 truncate text-xs font-semibold text-slate-500">{subtitle}</p>}
+          </div>
+        </div>
         {action}
       </div>
       {children}
@@ -485,12 +477,29 @@ function Panel({ title, action, children }: { title: string; action?: React.Reac
   );
 }
 
+function EmptyState({ icon: Icon, text }: { icon: React.ElementType; text: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-200 px-4 py-8 text-center">
+      <span className="flex size-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+        <Icon className="size-5" />
+      </span>
+      <p className="text-xs font-semibold text-slate-400">{text}</p>
+    </div>
+  );
+}
+
 function Badge({ children, tone }: { children: React.ReactNode; tone: Tone }) {
   return (
-    <span className={`rounded-full px-3 py-1 text-xs font-black ${toneStyles[tone].pill}`}>
+    <span className={`whitespace-nowrap rounded-full px-3 py-1 text-xs font-black ${toneStyles[tone].pill}`}>
       {children}
     </span>
   );
+}
+
+function academicYear() {
+  const d = new Date();
+  const start = d.getMonth() >= 3 ? d.getFullYear() : d.getFullYear() - 1;
+  return `${start}–${String(start + 1).slice(2)}`;
 }
 
 function ChildSwitcher({
@@ -504,29 +513,53 @@ function ChildSwitcher({
   activeChildId: string | null;
   setActiveChildId: (id: string) => void;
 }) {
-  if (childrenList.length > 1) {
-    return (
-      <div className="relative">
-        <CustomSelect
-          value={activeChildId || ""}
-          onChange={setActiveChildId}
-          options={childrenList.map((child) => ({ value: child.id, label: [child.name, formatClass(child)].filter(Boolean).join(" - ") }))}
-          className="w-full"
-        />
-      </div>
-    );
-  }
-
+  const multiple = childrenList.length > 1;
+  const [imageFailed, setImageFailed] = React.useState(false);
+  React.useEffect(() => setImageFailed(false), [activeChild?.id, activeChild?.profileImage]);
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-white/20 bg-white px-4 py-3 text-slate-900 shadow-sm">
-      <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-teal-50 text-sm font-black text-teal-700">
-        {getInitial(activeChild?.name)}
-      </div>
-      <div className="min-w-0">
-        <p className="truncate text-sm font-black text-slate-950">{activeChild?.name || "No student linked"}</p>
-        <p className="mt-0.5 truncate text-[11px] font-black uppercase tracking-widest text-slate-400">
-          {formatClass(activeChild) || "Class not set"}
-        </p>
+    <div className="w-full shrink-0 overflow-hidden rounded-3xl bg-white shadow-2xl shadow-black/30 ring-1 ring-white/60 lg:w-80">
+      <div className="p-4">
+        <div className="mb-3 flex items-center justify-between">
+          <span className="inline-flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+            <span className="size-2 animate-pulse rounded-full bg-emerald-500" /> Active Student
+          </span>
+          <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-black text-blue-600">
+            {multiple ? `${childrenList.length} children` : "Linked"}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-3.5">
+          <div className="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-sky-400 to-indigo-600 text-xl font-black text-white shadow-lg shadow-blue-500/30">
+            {activeChild?.profileImage && !imageFailed ? (
+              <img
+                src={activeChild.profileImage}
+                alt={activeChild.name || "Student"}
+                onError={() => setImageFailed(true)}
+                className="size-full object-cover"
+              />
+            ) : (
+              getInitial(activeChild?.name)
+            )}
+          </div>
+          <div className="min-w-0">
+            <p className="truncate text-base font-black leading-tight text-slate-950">{activeChild?.name || "No student linked"}</p>
+            <span className="mt-1 inline-flex max-w-full truncate rounded-full bg-gradient-to-r from-sky-400 via-blue-500 to-indigo-500 px-2.5 py-0.5 text-[11px] font-bold text-white shadow-sm shadow-blue-500/30">
+              {formatClass(activeChild) || "Class not set"}
+            </span>
+          </div>
+        </div>
+
+        {multiple && (
+          <div className="mt-4 border-t border-slate-100 pt-3">
+            <p className="mb-1.5 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Switch student</p>
+            <CustomSelect
+              value={activeChildId || ""}
+              onChange={setActiveChildId}
+              options={childrenList.map((child) => ({ value: child.id, label: [child.name, formatClass(child)].filter(Boolean).join(" - ") }))}
+              className="w-full"
+            />
+          </div>
+        )}
       </div>
     </div>
   );
